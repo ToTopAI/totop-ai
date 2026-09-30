@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "totop-developer": {
+      "type": "http",
+      "url": "https://api.totop.ai/mcp",
+      "oauth": { "clientId": "codex:totop", "callbackUrl": "http://127.0.0.1/callback" }
+    }
+  }
+}

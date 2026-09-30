@@ -1,0 +1,12 @@
+{
+  "name": "totop-local",
+  "interface": { "displayName": "ToTop Local Plugins" },
+  "plugins": [
+    {
+      "name": "totop-publish",
+      "source": { "source": "local", "path": "./plugins/totop-publish" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}
