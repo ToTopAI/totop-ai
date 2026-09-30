@@ -1,4 +1,4 @@
-# ToTop Publish for Codex
+# totop-ai for Codex
 
 The independent ToTop plugin distribution: a submission skill, remote OAuth MCP
 connection, and local build packaging/upload helpers. No platform backend or
@@ -11,11 +11,11 @@ Requires a current Codex desktop app/CLI with plugin marketplace support, Git,
 and Python 3 for game packaging/upload. No API key or client secret is required.
 
 ```sh
-codex plugin marketplace add ToTopAI/totop-codex-plugin
+codex plugin marketplace add ToTopAI/totop-ai
 ```
 
 Restart the Codex desktop app. In the Plugins Directory choose **ToTop Local
-Plugins → ToTop Publish → Install**. Complete Authenticate in the browser using
+Plugins → totop-ai → Install**. Complete Authenticate in the browser using
 your own ToTop account, then start a new chat. Do not copy an existing machine's
 configuration or authorization files. Installation and OAuth do not grant
 submission permission; a linked, allowlisted creator account is required.
@@ -23,7 +23,7 @@ submission permission; a linked, allowlisted creator account is required.
 For CLI versions with `plugin add`:
 
 ```sh
-codex plugin add totop-publish@totop-local
+codex plugin add totop-ai@totop-ai
 codex mcp login totop-developer
 ```
 
@@ -31,11 +31,11 @@ codex mcp login totop-developer
 
 First verify account access without uploading:
 
-> Use ToTop Publish to read my account and submission requirements only. Do not create, upload, submit or publish a game. Do not output credentials.
+> Use totop-ai to read my account and submission requirements only. Do not create, upload, submit or publish a game. Do not output credentials.
 
 When ready:
 
-> 使用 ToTop Publish，将当前游戏提交到 ToTop，审核通过后上架。提交前先让我确认账号、游戏、版本和外部服务声明。
+> 使用 totop-ai，将当前游戏提交到 ToTop，审核通过后上架。提交前先让我确认账号、游戏、版本和外部服务声明。
 
 Codex prepares build output and explicitly selected media, not repository history
 or secrets. Confirm submission before upload. Review continues independently on
@@ -46,10 +46,19 @@ Manage authorization: https://creator.totop.ai/codex
 
 Submission progress: https://creator.totop.ai/releases
 
+## Migrating from the earlier name
+
+If you installed ToTop Publish (`totop-publish@totop-local`), disable that old
+plugin in the Plugins Directory before adding this source and installing
+`totop-ai@totop-ai`. This prevents duplicate tool/skill sources. Renaming does
+not revoke ToTop account grants. Complete Authenticate again if the new plugin
+asks for it; never transfer authorization files by hand. Historical Releases
+retain their original package names and hashes.
+
 ## Update / offline installation
 
 ```sh
-codex plugin marketplace upgrade totop-local
+codex plugin marketplace upgrade totop-ai
 ```
 
 Restart Codex and start a new chat after updating. If `codex` or plugin commands
@@ -58,8 +67,8 @@ the versioned ZIP and SHA256 file from Releases. Verify before extraction:
 
 ```sh
 shasum -a 256 -c SHA256SUMS
-unzip totop-publish-0.2.2.zip -d totop-plugin-install
-codex plugin marketplace add ./totop-plugin-install/totop-publish-0.2.2
+unzip totop-ai-0.2.3.zip -d totop-plugin-install
+codex plugin marketplace add ./totop-plugin-install/totop-ai-0.2.3
 ```
 
 Keep the extracted directory. ZIP installation uses the same marketplace and

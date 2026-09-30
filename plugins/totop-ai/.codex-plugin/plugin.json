@@ -1,13 +1,13 @@
 {
-  "name": "totop-publish",
-  "version": "0.2.2",
+  "name": "totop-ai",
+  "version": "0.2.3",
   "description": "Prepare game builds and submit them to ToTop for review and automatic publication after approval.",
   "author": {
     "name": "ToTop"
   },
   "skills": "./skills/",
   "interface": {
-    "displayName": "ToTop Publish",
+    "displayName": "totop-ai",
     "shortDescription": "Submit games to ToTop",
     "longDescription": "Prepare and upload a game build, submit an immutable version for platform review, and read publication results. Requires an enabled ToTop developer connection.",
     "developerName": "ToTop",

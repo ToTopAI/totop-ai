@@ -1,10 +1,10 @@
 {
-  "name": "totop-local",
-  "interface": { "displayName": "ToTop Local Plugins" },
+  "name": "totop-ai",
+  "interface": { "displayName": "totop-ai" },
   "plugins": [
     {
-      "name": "totop-publish",
-      "source": { "source": "local", "path": "./plugins/totop-publish" },
+      "name": "totop-ai",
+      "source": { "source": "local", "path": "./plugins/totop-ai" },
       "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
       "category": "Productivity"
     }

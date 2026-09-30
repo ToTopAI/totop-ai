@@ -9,12 +9,12 @@ root = Path(__file__).resolve().parents[1]
 manifest = json.loads((root / 'distribution.json').read_text())
 expected = {
     '.agents/plugins/marketplace.json',
-    'plugins/totop-publish/.codex-plugin/plugin.json',
-    'plugins/totop-publish/.mcp.json',
-    'plugins/totop-publish/README.md',
-    'plugins/totop-publish/skills/submit-game/SKILL.md',
-    'plugins/totop-publish/skills/submit-game/scripts/package_game.py',
-    'plugins/totop-publish/skills/submit-game/scripts/upload_game.py',
+    'plugins/totop-ai/.codex-plugin/plugin.json',
+    'plugins/totop-ai/.mcp.json',
+    'plugins/totop-ai/README.md',
+    'plugins/totop-ai/skills/submit-game/SKILL.md',
+    'plugins/totop-ai/skills/submit-game/scripts/package_game.py',
+    'plugins/totop-ai/skills/submit-game/scripts/upload_game.py',
 }
 allowed = expected | {'distribution.json', 'README.md', '.gitignore',
     'scripts/validate_distribution.py', '.github/workflows/validate.yml'}
@@ -29,14 +29,14 @@ for name in allowed:
         assert hashlib.sha256(content).hexdigest() == manifest['files'][name], 'Distribution hash mismatch'
 tracked = subprocess.check_output(['git', 'ls-files'], cwd=root, text=True).splitlines()
 assert set(tracked) == allowed, 'Unexpected public repository files'
-config = json.loads((root / 'plugins/totop-publish/.mcp.json').read_text())
+config = json.loads((root / 'plugins/totop-ai/.mcp.json').read_text())
 assert config == {'mcpServers': {'totop-developer': {
     'type': 'http', 'url': 'https://api.totop.ai/mcp',
     'oauth': {'clientId': 'codex:totop', 'callbackUrl': 'http://127.0.0.1/callback'},
 }}}, 'Unexpected MCP configuration'
-plugin = json.loads((root / 'plugins/totop-publish/.codex-plugin/plugin.json').read_text())
-assert plugin['version'] == manifest['version'] and plugin['name'] == manifest['name'] == 'totop-publish'
+plugin = json.loads((root / 'plugins/totop-ai/.codex-plugin/plugin.json').read_text())
+assert plugin['version'] == manifest['version'] and plugin['name'] == manifest['name'] == 'totop-ai'
 marketplace = json.loads((root / '.agents/plugins/marketplace.json').read_text())
-assert marketplace['name'] == 'totop-local'
-assert marketplace['plugins'][0]['source'] == {'source': 'local', 'path': './plugins/totop-publish'}
+assert marketplace['name'] == 'totop-ai'
+assert marketplace['plugins'][0]['source'] == {'source': 'local', 'path': './plugins/totop-ai'}
 print('Validated credential-free ToTop plugin ' + manifest['version'])

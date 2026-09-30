@@ -1,4 +1,4 @@
-# ToTop Publish — allowlisted pilot
+# totop-ai — allowlisted pilot
 
 The production MCP pilot is enabled for allowlisted creator accounts. Automatic approval remains disabled; unsupported accounts cannot submit. Installing the plugin or completing OAuth does not publish a game or bypass review. Approved games are deployed by the platform; wait for a published status and playable link.
 
@@ -8,11 +8,11 @@ Requires a current Codex desktop app/CLI with plugin marketplace support, Git,
 and Python 3 for local packaging/upload. No API key or client secret is needed.
 
 ```sh
-codex plugin marketplace add ToTopAI/totop-codex-plugin
+codex plugin marketplace add ToTopAI/totop-ai
 ```
 
-Restart Codex, open the Plugins Directory, choose **ToTop Local Plugins**, and
-install **ToTop Publish**. Complete Authenticate in your browser using your own
+Restart Codex, open the Plugins Directory, choose **totop-ai**, and
+install **totop-ai**. Complete Authenticate in your browser using your own
 ToTop account, then start a new chat. Do not copy another user's Codex settings,
 paste Tokens, or store credentials in project files. Installation and OAuth do
 not enable submission permission: the pilot needs a linked, allowlisted creator
@@ -20,7 +20,7 @@ account. Manage and revoke connections at https://creator.totop.ai/codex.
 
 First test without changing anything:
 
-> Use ToTop Publish to read my account and submission requirements only. Do not upload, submit or publish a game. Do not output credentials.
+> Use totop-ai to read my account and submission requirements only. Do not upload, submit or publish a game. Do not output credentials.
 
 Then request a submission:
 
@@ -31,10 +31,15 @@ asks you to confirm account/game/version and publication intent before uploading
 Only build output and explicitly selected media are uploaded, not repositories
 or secrets. Review progress is also available at https://creator.totop.ai/releases.
 
+If you installed the earlier ToTop Publish / totop-publish plugin, disable that
+old plugin in the Plugins Directory, then add the new source and install
+totop-ai. Renaming changes the plugin namespace; updating the old entry alone
+is not a verified migration. This does not revoke your ToTop account grants.
+
 Update the source, restart Codex and open a new chat:
 
 ```sh
-codex plugin marketplace upgrade totop-local
+codex plugin marketplace upgrade totop-ai
 ```
 
 Versioned ZIPs and SHA256 checksums are available from the independent repository's
@@ -44,7 +49,7 @@ without passwords, tokens, cookies, signed upload URLs or private game files.
 
 The repository plugin uses pre-registered OAuth client `codex:totop`, resource `https://api.totop.ai/mcp`, and native loopback callback `http://127.0.0.1/callback`. No client secret or copied dashboard token is needed. The server permits a variable loopback port, not arbitrary hosts or paths.
 
-Version 0.2.2 uses the officially supported Codex compatibility manifest
+Version 0.2.3 uses the officially supported Codex compatibility manifest
 `.codex-plugin/plugin.json` and `.mcp.json`. A real clean Codex CLI 0.153.2 test
 found that the portable MCP manifest took precedence and lost the registered
 OAuth client settings, incorrectly attempting dynamic registration. Portable
@@ -57,7 +62,7 @@ For a checkout at `/absolute/path/to/totop-platform`, add its repo marketplace:
 codex plugin marketplace add /absolute/path/to/totop-platform
 ```
 
-Restart the Codex desktop app, select **ToTop Local Plugins** in the Plugins Directory, and install **ToTop Publish**. The same marketplace/plugin setting is recognized by supported Codex CLI clients. This local marketplace is for the allowlisted pilot; it is not a public-directory publication.
+Restart the Codex desktop app, select **totop-ai** in the Plugins Directory, and install **totop-ai**. The same marketplace/plugin setting is recognized by supported Codex CLI clients. This local marketplace is for the allowlisted pilot; it is not a public-directory publication.
 
 Direct CLI MCP configuration is available for MCP-only pilot testing:
 
@@ -66,7 +71,7 @@ Direct CLI MCP configuration is available for MCP-only pilot testing:
 Maintainers can build a reproducible ZIP without shipping the platform repository:
 
 ```sh
-python3 scripts/package-totop-plugin.py /absolute/path/totop-publish-0.2.2.zip
+python3 scripts/package-totop-plugin.py /absolute/path/totop-ai-0.2.3.zip
 ```
 
 The output JSON records the archive SHA256 and size. The command refuses to
@@ -78,11 +83,11 @@ SHA256 of every packaged input. Python 3 is required for packaging/upload helper
 Extract the ZIP to a new directory, then register its enclosed marketplace root:
 
 ```sh
-unzip /absolute/path/totop-publish-0.2.2.zip -d /absolute/path/totop-plugin-install
-codex plugin marketplace add /absolute/path/totop-plugin-install/totop-publish-0.2.2
+unzip /absolute/path/totop-ai-0.2.3.zip -d /absolute/path/totop-plugin-install
+codex plugin marketplace add /absolute/path/totop-plugin-install/totop-ai-0.2.3
 ```
 
-Restart Codex and install **ToTop Publish** from **ToTop Local Plugins**. Keep the
+Restart Codex and install **totop-ai** from **totop-ai**. Keep the
 extracted directory available. Authenticate using your own allowlisted account;
 the archive contains no account session. First-use authorization and a real
 submission from a clean Desktop/CLI environment remain separate acceptance gates.
@@ -90,7 +95,7 @@ submission from a clean Desktop/CLI environment remain separate acceptance gates
 Codex CLI versions exposing `plugin add` can also install directly:
 
 ```sh
-codex plugin add totop-publish@totop-local
+codex plugin add totop-ai@totop-ai
 codex mcp login totop-developer
 ```
 

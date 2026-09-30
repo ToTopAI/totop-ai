@@ -1,13 +1,13 @@
 {
-  "name": "totop-publish",
-  "version": "0.2.2",
+  "name": "totop-ai",
+  "version": "0.2.3",
   "files": {
-    ".agents/plugins/marketplace.json": "7bf4a7fa151dc6235d741d59d87c74525cf87dbc9ad02fafc87d10d9935544a1",
-    "plugins/totop-publish/.codex-plugin/plugin.json": "e183b773aaf1042d54522ae59c828d82b8a471a23b3196f1a227730133c1448d",
-    "plugins/totop-publish/.mcp.json": "cdd1559b916eca9bb18cf761216677e658c647004979f002db6e76ad41e71a01",
-    "plugins/totop-publish/README.md": "9ab77c670db841b816ccca50ed87962f938715de7adca99c9c0ea709ee123704",
-    "plugins/totop-publish/skills/submit-game/SKILL.md": "05ff7c6695ab0af4b07ad8dbc16259112f32451fa80ff24b99be71b0d2c420b0",
-    "plugins/totop-publish/skills/submit-game/scripts/package_game.py": "4ccc97fe0400422d79f4fa7ab27d731a22038053025566c32b452f655fa954dd",
-    "plugins/totop-publish/skills/submit-game/scripts/upload_game.py": "7f6391e41be2e7b0c90b4c4a3b80cac9654a71391c63c545f6adb978d116bb0b"
+    ".agents/plugins/marketplace.json": "714888025e8936102133388eb3b5573cf0faf80a54361fbe0fe954f09bf50213",
+    "plugins/totop-ai/.codex-plugin/plugin.json": "cdd1d729a659d7d5902dd2a09a46531d39d15be514aea15098c34f58fc1c4bd6",
+    "plugins/totop-ai/.mcp.json": "cdd1559b916eca9bb18cf761216677e658c647004979f002db6e76ad41e71a01",
+    "plugins/totop-ai/README.md": "d5ea8b6c4de523ccfcb12c2fae1eeebef12cc70dc4a1e1e7313b32a430cda142",
+    "plugins/totop-ai/skills/submit-game/SKILL.md": "05ff7c6695ab0af4b07ad8dbc16259112f32451fa80ff24b99be71b0d2c420b0",
+    "plugins/totop-ai/skills/submit-game/scripts/package_game.py": "4ccc97fe0400422d79f4fa7ab27d731a22038053025566c32b452f655fa954dd",
+    "plugins/totop-ai/skills/submit-game/scripts/upload_game.py": "7f6391e41be2e7b0c90b4c4a3b80cac9654a71391c63c545f6adb978d116bb0b"
   }
 }
