@@ -15,8 +15,8 @@ and Python 3 for game packaging/upload. No API key or client secret is required.
 codex plugin marketplace add ToTopAI/totop-ai
 ```
 
-Restart the Codex desktop app. In the Plugins Directory choose **ToTop Local
-Plugins → totop-ai → Install**. Complete Authenticate in the browser using
+Restart the Codex desktop app. In the Plugins Directory choose **totop-ai
+→ totop-ai → Install**. Complete Authenticate in the browser using
 your own ToTop account, then start a new chat. Do not copy an existing machine's
 configuration or authorization files. Installation and OAuth do not grant
 submission permission by themselves; an active linked creator profile is required.
@@ -74,6 +74,8 @@ codex plugin marketplace add ./totop-plugin-install/totop-ai-0.2.3
 
 Keep the extracted directory. ZIP installation uses the same marketplace and
 plugin as Git installation; both require network access for ToTop OAuth/MCP.
+Previously published ZIPs remain immutable and may contain older rollout copy;
+the current repository guide and live `get_submission_requirements` are authoritative.
 
 ## Security / compatibility
 
