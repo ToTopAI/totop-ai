@@ -1,6 +1,6 @@
-# totop-ai — allowlisted pilot
+# totop-ai — registered-user access
 
-The production MCP pilot is enabled for allowlisted creator accounts. Automatic approval remains disabled; unsupported accounts cannot submit. Installing the plugin or completing OAuth does not publish a game or bypass review. Approved games are deployed by the platform; wait for a published status and playable link.
+All registered ToTop users can submit after OAuth authorization and activation of a linked creator profile; no allowlist is required. Platform AI review and automatic publication are enabled for eligible submissions. Uncertain evidence and first-time external services go to humans. Installing the plugin or completing OAuth does not publish a game or bypass review. Approved games are deployed by the platform; wait for a published status and playable link.
 
 ## Recommended installation
 
@@ -15,8 +15,8 @@ Restart Codex, open the Plugins Directory, choose **totop-ai**, and
 install **totop-ai**. Complete Authenticate in your browser using your own
 ToTop account, then start a new chat. Do not copy another user's Codex settings,
 paste Tokens, or store credentials in project files. Installation and OAuth do
-not enable submission permission: the pilot needs a linked, allowlisted creator
-account. Manage and revoke connections at https://creator.totop.ai/codex.
+not replace creator-profile activation: an active linked creator profile is
+required. Manage and revoke connections at https://creator.totop.ai/codex.
 
 First test without changing anything:
 
@@ -62,9 +62,9 @@ For a checkout at `/absolute/path/to/totop-platform`, add its repo marketplace:
 codex plugin marketplace add /absolute/path/to/totop-platform
 ```
 
-Restart the Codex desktop app, select **totop-ai** in the Plugins Directory, and install **totop-ai**. The same marketplace/plugin setting is recognized by supported Codex CLI clients. This local marketplace is for the allowlisted pilot; it is not a public-directory publication.
+Restart the Codex desktop app, select **totop-ai** in the Plugins Directory, and install **totop-ai**. The same marketplace/plugin setting is recognized by supported Codex CLI clients. This repository marketplace is open to registered users; it is not a public-directory publication.
 
-Direct CLI MCP configuration is available for MCP-only pilot testing:
+Direct CLI MCP configuration is available for MCP-only testing:
 
 ### Standalone distribution
 
@@ -88,7 +88,7 @@ codex plugin marketplace add /absolute/path/totop-plugin-install/totop-ai-0.2.3
 ```
 
 Restart Codex and install **totop-ai** from **totop-ai**. Keep the
-extracted directory available. Authenticate using your own allowlisted account;
+extracted directory available. Authenticate using your own registered account;
 the archive contains no account session. First-use authorization and a real
 submission from a clean Desktop/CLI environment remain separate acceptance gates.
 
@@ -108,6 +108,18 @@ codex mcp login totop
 
 Direct MCP configuration exposes the remote tools only; installing the plugin also provides the submission skill. The repository does not modify a developer's personal marketplace or Codex settings.
 
-Read `get_submission_requirements` first. The current pilot accepts existing linked creator accounts, new managed games, static ZIPs, text metadata, one PNG/JPEG/WebP cover, and declared HTTPS/WSS backends. First-time external-service use and uncertain evidence go to a human. Automatic approval remains off by default. Packaging and signed-upload helpers are under `skills/submit-game/scripts/`; neither helper receives OAuth credentials.
+Read `get_submission_requirements` first. Registered users with active linked creator profiles can submit new managed games, static ZIPs, text metadata, one PNG/JPEG/WebP cover, and declared HTTPS/WSS backends. First-time external-service use and uncertain evidence go to a human. Eligible reviews can automatically approve and publish. Packaging and signed-upload helpers are under `skills/submit-game/scripts/`; neither helper receives OAuth credentials.
+
+## Usage protection
+
+The server reports current limits in `get_submission_requirements`: 120 requests/minute,
+5 new games/day, 10 submissions/day, 3 simultaneously pending submissions,
+20 upload reservations/day and 1 GiB upload reservations/day. Original packages
+and covers have a 5 GiB retained reservation limit (not a physical runtime/evidence
+storage measurement). Daily limits reset at 00:00 UTC. Abandoned uploads still count;
+exact idempotent write retries do not consume another reservation. A 429 requires
+waiting or reducing usage, not changing accounts to evade limits. AI attempts are
+limited to 20/account/day and 200/platform/day, including failed attempts. Exhaustion
+requires human review, never approval. These are usage limits, not a USD spending cap.
 
 References: [Codex MCP setup](https://developers.openai.com/codex/mcp), [plugin authorization](https://developers.openai.com/plugins/build/auth).

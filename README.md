@@ -2,8 +2,9 @@
 
 The independent ToTop plugin distribution: a submission skill, remote OAuth MCP
 connection, and local build packaging/upload helpers. No platform backend or
-account credentials are included. This is an allowlisted pilot, not an OpenAI
-public-directory listing.
+account credentials are included. All registered ToTop users can submit after
+OAuth authorization and creator-profile activation. No allowlist is required.
+This is not an OpenAI public-directory listing.
 
 ## Install
 
@@ -18,7 +19,7 @@ Restart the Codex desktop app. In the Plugins Directory choose **ToTop Local
 Plugins → totop-ai → Install**. Complete Authenticate in the browser using
 your own ToTop account, then start a new chat. Do not copy an existing machine's
 configuration or authorization files. Installation and OAuth do not grant
-submission permission; a linked, allowlisted creator account is required.
+submission permission by themselves; an active linked creator profile is required.
 
 For CLI versions with `plugin add`:
 
@@ -81,7 +82,13 @@ validation/CI files belong in this repository. Never add `.env`, tokens, OAuth
 sessions, upload receipts, private game files, or platform code. The public MCP
 client ID is an identifier, not a secret. Helpers never receive OAuth tokens.
 Portable manifests are intentionally absent to preserve the tested Codex OAuth
-wiring. Automatic approval remains disabled; no tool bypasses platform review.
+wiring. Platform AI review and automatic publication are enabled for eligible
+submissions; uncertain evidence and first-time external services go to humans.
+No tool bypasses platform review. Read `get_submission_requirements` for current
+request, submission, upload/storage and model-attempt quotas. A 429 requires
+waiting or reducing usage, not switching accounts to evade limits. Exact
+idempotent write retries do not consume new write quota. Model quota exhaustion
+goes to manual review, never automatic approval; there is no USD spending cap.
 
 Report problems in Issues with client version and sanitized error text, never
 passwords, keys, cookies, tokens, or signed upload URLs. ToTop maintains this
