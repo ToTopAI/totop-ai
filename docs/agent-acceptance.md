@@ -26,7 +26,7 @@ Harness emits peer-dependency warnings for components supplied by its runtime. P
 - Isolated Postgres: full migration chain, private-table RLS, anonymous/authenticated RPC denial, shared registration limits, own-account connection isolation and revocation verified before production migration.
 - Production: protected-resource/OAuth metadata, S256, dynamic registration through the official SDK, restricted scopes and 401 challenges verified. Private registry tables/RPCs are inaccessible to anonymous/authenticated roles.
 - Browser: six client selectors, native/manual modes and inline copy state checked; 390px Arabic layouts have document scrollWidth equal to clientWidth. This is browser emulation, not iPhone hardware acceptance.
-- Cross-platform CI is tracked by the [distribution workflow](https://github.com/ToTopAI/totop-ai/actions/workflows/validate.yml). Fixed-version packages, file manifests and SHA-256 sums are published by the release workflow; check the actual run status before treating an OS as passed.
+- Windows, macOS and Linux helper tests, package build and distribution validation all passed in [run 37347190456](https://github.com/ToTopAI/totop-ai/actions/runs/37347190456), code revision b8aeff45312ee71083dd294648ffc39d35d92a9e. Windows checks exercise junction rejection, case/short-name normalization and owner-only ACL fallback. Fixed-version packages, file manifests and SHA-256 sums are published by the release workflow. These runner results are not native Agent application acceptance.
 
 ## Authenticated acceptance handoff
 
