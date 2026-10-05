@@ -1,6 +1,6 @@
 {
   "name": "totop-ai",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Prepare game builds and submit them to ToTop for review and automatic publication after approval.",
   "author": {
     "name": "ToTop"
@@ -13,7 +13,9 @@
     "developerName": "ToTop",
     "category": "Productivity",
     "capabilities": [],
-    "defaultPrompt": ["将当前游戏提交到 ToTop，审核通过后自动上架。"]
+    "defaultPrompt": [
+      "将当前游戏提交到 ToTop，审核通过后自动上架。"
+    ]
   },
   "mcpServers": "./.mcp.json"
 }

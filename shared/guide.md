@@ -8,120 +8,7 @@ DeepSeek Harness acceptance target: official `@deepseek-ai/dsh` **0.2.0-rc.2**, 
 
 ## Client setup
 
-### Claude Code
-
-Run /mcp and authorize ToTop in your browser.
-
-Native plugin:
-
-```text
-/plugin marketplace add ToTopAI/totop-ai
-/plugin install totop-ai@totop-ai
-```
-
-Manual MCP:
-
-```text
-claude mcp add --transport http totop-developer https://api.totop.ai/mcp
-```
-
-Local upload: Use authorized local tools and the helper included in the plugin (${CLAUDE_PLUGIN_ROOT}).
-
-### Claude Desktop
-
-Settings → Connectors → Add custom connector → enter the remote MCP URL → Connect. Authorize your ToTop account in the browser.
-
-Manual MCP:
-
-```text
-https://api.totop.ai/mcp
-```
-
-Local upload: Chat and Cowork must be checked separately. Use only local tools actually authorized in this mode; otherwise configure the ToTop stdio bridge.
-
-### Codex
-
-Desktop: install totop-ai and choose Authenticate. CLI: use mcp login. Keep the existing Codex OAuth configuration.
-
-Native plugin:
-
-```text
-codex plugin marketplace add ToTopAI/totop-ai
-codex plugin add totop-ai@totop-ai
-codex mcp login totop-developer
-```
-
-Manual MCP:
-
-```text
-codex mcp add totop-developer --url https://api.totop.ai/mcp --oauth-client-id codex:totop --oauth-resource https://api.totop.ai/mcp
-codex mcp login totop-developer
-```
-
-Local upload: Use authorized local execution tools and the contained Node helper; resolve its path relative to the loaded skill.
-
-### Cursor
-
-Project config: .cursor/mcp.json. Global config: ~/.cursor/mcp.json. Enable the connection and complete browser OAuth. One-click MCP adds configuration only, not the full plugin.
-
-Native plugin:
-
-```text
-Extract the Cursor archive into ~/.cursor/plugins/local/totop-ai, then reload Cursor. Do not replace an existing plugin directory without reviewing it.
-```
-
-Manual MCP:
-
-```text
-{
-  "mcpServers": {
-    "totop-developer": { "url": "https://api.totop.ai/mcp" }
-  }
-}
-```
-
-Local upload: Use authorized local tools and the contained helper (${CURSOR_PLUGIN_ROOT}).
-
-### DeepSeek Harness
-
-Run node /absolute/totop-agent.mjs login --profile deepseek first. Bundle inserts only its own entry; replace the invalid gameDirectory with an explicitly approved directory. Official MCP client pinned to 0.0.1-rc.1.
-
-Native plugin:
-
-```text
-dsh plugin --profile YOUR_PROFILE add ./totop-ai-0.3.0.tgz --save-prod --ignore-scripts
-```
-
-Manual MCP:
-
-```text
-- id: mcp-totop
-  name: "@deepseek-ai/dsh-mcp-client"
-  config:
-    serverName: totop-developer
-    transport: stdio
-    command: node
-    args: ["/absolute/totop-agent.mjs", "serve", "--profile", "deepseek", "--allow-root", "/absolute/game"]
-    toolCallTimeoutMs: 120000
-```
-
-Local upload: The restricted bridge adds prepare_local_artifact and upload_local_artifact. Remove with dsh plugin --profile YOUR_PROFILE remove totop-ai.
-
-### MCP
-
-Prefer native Streamable HTTP + browser OAuth with PKCE and resource=https://api.totop.ai/mcp. Dynamic registration and client metadata documents are supported; do not reuse another client identity.
-
-Manual MCP:
-
-```text
-{
-  "mcpServers": {
-    "totop-developer": { "url": "https://api.totop.ai/mcp" }
-  }
-}
-```
-
-Local upload: Use authorized local tools plus the standalone helper. If remote OAuth or local tools are unavailable, use the stdio example below.
+@@CLIENTS@@
 
 ## Local helper and stdio fallback
 
@@ -142,16 +29,7 @@ node /absolute/totop-agent.mjs status --profile game-project
 node /absolute/totop-agent.mjs logout --profile game-project
 ```
 
-```json
-{
-  "mcpServers": {
-    "totop-developer": {
-      "command": "node",
-      "args": ["/absolute/totop-agent.mjs", "serve", "--profile", "game-project", "--allow-root", "/absolute/game"]
-    }
-  }
-}
-```
+@@BRIDGE@@
 
 The bridge forwards the original remote tool input schemas and adds prepare_local_artifact({path,purpose}) and upload_local_artifact({artifactHandle,uploadId}). It keeps upload receipts internal; signed URLs are redacted. --allow-root is mandatory and rejects home/root directories, sensitive files, symlinks/junctions, path escape and changing builds. No arbitrary file-read or command tool is exposed. stdio stdout contains MCP messages only. Reconnection requires restarting the bridge; do not enable automatic approval to resolve errors.
 

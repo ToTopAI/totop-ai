@@ -15,18 +15,18 @@ Use authorized local execution/file tools when available. Otherwise configure th
 
 ## Prepare and upload
 
-Requires Node 22+, not Python. Helper included at `/ABSOLUTE_LOADED_SKILL_DIRECTORY/../../skills/submit-game/scripts/totop-agent.mjs`. Resolve ABSOLUTE_LOADED_SKILL_DIRECTORY to the directory containing this loaded SKILL.md; its helper is `scripts/totop-agent.mjs` beside this file. Claude/Cursor use their documented plugin root variable. Do not assume hook environment variables are exported to ordinary local execution tools or invent variables for unknown clients.
+Requires Node 22+, not Python. Helper included at `/absolute/installed/bundle/totop-agent.mjs`. Resolve ABSOLUTE_LOADED_SKILL_DIRECTORY to the directory containing this loaded SKILL.md; its helper is `scripts/totop-agent.mjs` beside this file. Claude/Cursor use their documented plugin root variable. Do not assume hook environment variables are exported to ordinary local execution tools or invent variables for unknown clients.
 
 ```sh
-node "/ABSOLUTE_LOADED_SKILL_DIRECTORY/../../skills/submit-game/scripts/totop-agent.mjs" prepare /absolute/game/dist --allow-root /absolute/game --purpose game
-node "/ABSOLUTE_LOADED_SKILL_DIRECTORY/../../skills/submit-game/scripts/totop-agent.mjs" prepare /absolute/game/cover.jpg --allow-root /absolute/game --purpose cover
+node "/absolute/installed/bundle/totop-agent.mjs" prepare /absolute/game/dist --allow-root /absolute/game --purpose game
+node "/absolute/installed/bundle/totop-agent.mjs" prepare /absolute/game/cover.jpg --allow-root /absolute/game --purpose cover
 ```
 
 The root index.html is required. The helper refuses sensitive files, links, path escape and build changes. Covers are JPEG/PNG/WebP; the server performs authoritative image checks.
 
 Call `start_upload` with its complete discovered object schema, actual hash, byte size, purpose and game/draft fields. ZIP and cover are separate uploads. No binary data in MCP JSON. Do not guess arguments when discovery is broken.
 
-Upload using authorized local tools or `node "/ABSOLUTE_LOADED_SKILL_DIRECTORY/../../skills/submit-game/scripts/totop-agent.mjs" upload ARTIFACT --allow-root GAME_DIRECTORY`. Feed the complete receipt privately through standard input, not command arguments, environment variables, committed files or chat output. Never print tokens, codes or signed URLs. Only signed PUT headers go to R2, never OAuth credentials.
+Upload using authorized local tools or `node "/absolute/installed/bundle/totop-agent.mjs" upload ARTIFACT --allow-root GAME_DIRECTORY`. Feed the complete receipt privately through standard input, not command arguments, environment variables, committed files or chat output. Never print tokens, codes or signed URLs. Only signed PUT headers go to R2, never OAuth credentials.
 
 With the bridge use `prepare_local_artifact`, `start_upload`, then `upload_local_artifact({artifactHandle, uploadId})`. Receipts remain internal. Next call `complete_upload`; an HTTP upload alone is not a verified artifact.
 
@@ -43,10 +43,10 @@ Read `get_submission`: pending, manual review, rejection, approval, deploying, f
 See https://totop.ai/mcp.md. Remote endpoint https://api.totop.ai/mcp uses Streamable HTTP and browser OAuth. Opt-in bridge:
 
 ```sh
-node "/ABSOLUTE_LOADED_SKILL_DIRECTORY/../../skills/submit-game/scripts/totop-agent.mjs" login --profile game-project
-node "/ABSOLUTE_LOADED_SKILL_DIRECTORY/../../skills/submit-game/scripts/totop-agent.mjs" serve --profile game-project --allow-root /absolute/game
-node "/ABSOLUTE_LOADED_SKILL_DIRECTORY/../../skills/submit-game/scripts/totop-agent.mjs" status --profile game-project
-node "/ABSOLUTE_LOADED_SKILL_DIRECTORY/../../skills/submit-game/scripts/totop-agent.mjs" logout --profile game-project
+node "/absolute/installed/bundle/totop-agent.mjs" login --profile game-project
+node "/absolute/installed/bundle/totop-agent.mjs" serve --profile game-project --allow-root /absolute/game
+node "/absolute/installed/bundle/totop-agent.mjs" status --profile game-project
+node "/absolute/installed/bundle/totop-agent.mjs" logout --profile game-project
 ```
 
 Detect duplicate manual/plugin MCP entries; do not silently overwrite them. Do not enable auto-approval. Credentials and artifacts are profile/account isolated; switching accounts requires fresh preparation. Revoke connections at https://creator.totop.ai/agents.

@@ -1,0 +1,14 @@
+{
+  "name": "totop-ai",
+  "owner": {
+    "name": "ToTop"
+  },
+  "plugins": [
+    {
+      "name": "totop-ai",
+      "source": "plugins/cursor",
+      "version": "0.3.0",
+      "description": "Submit local HTML5 and WebGL games to ToTop using MCP and browser OAuth."
+    }
+  ]
+}

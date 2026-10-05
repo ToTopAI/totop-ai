@@ -1,0 +1,27 @@
+{
+  "name": "totop-ai",
+  "version": "0.3.0",
+  "type": "module",
+  "main": "./index.mjs",
+  "exports": {
+    ".": "./index.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-mcp-client": "0.0.1-rc.1"
+  },
+  "files": [
+    "index.mjs",
+    "totop-agent.mjs",
+    "cordis.patch.yml",
+    "WORKFLOW.md",
+    "README.md"
+  ]
+}

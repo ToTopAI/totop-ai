@@ -1,0 +1,12 @@
+{
+  "name": "totop-ai",
+  "version": "0.3.0",
+  "description": "Submit local HTML5 and WebGL games to ToTop using MCP and browser OAuth.",
+  "author": {
+    "name": "ToTop"
+  },
+  "homepage": "https://totop.ai/mcp/",
+  "repository": "https://github.com/ToTopAI/totop-ai",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}

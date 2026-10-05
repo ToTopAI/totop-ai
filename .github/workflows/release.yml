@@ -1,0 +1,21 @@
+name: Fixed-version distribution
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test && npm run build && npm run validate
+      - run: test "$GITHUB_REF_NAME" = "v$(node -p "require('./distribution.json').version")"
+      - run: gh release create "$GITHUB_REF_NAME" dist/*.zip dist/*.tgz dist/SHA256SUMS dist/FILE-MANIFEST.json --title "ToTop $GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "totop-developer": {
+      "url": "https://api.totop.ai/mcp"
+    }
+  }
+}

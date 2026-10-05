@@ -1,0 +1,6 @@
+- insert:
+    - id: totop-ai
+      name: totop-ai
+      config:
+        profile: deepseek
+        gameDirectory: /REPLACE_WITH_YOUR_ABSOLUTE_GAME_DIRECTORY

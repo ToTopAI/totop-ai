@@ -1,0 +1,11 @@
+{
+  "name": "totop-ai-distribution",
+  "private": true,
+  "type": "module",
+  "version": "0.3.0",
+  "engines": { "node": ">=22" },
+  "scripts": { "test": "node --test tests/*.test.mjs", "build": "node scripts/build-distribution.mjs", "validate": "node scripts/validate-distribution.mjs" },
+  "dependencies": { "@modelcontextprotocol/sdk": "1.31.0", "fflate": "0.8.3" },
+  "optionalDependencies": { "@napi-rs/keyring": "2.1.0" },
+  "devDependencies": { "esbuild": "0.28.2" }
+}
