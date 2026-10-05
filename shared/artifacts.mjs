@@ -17,14 +17,17 @@ const same=(a,b)=>a.dev===b.dev&&a.ino===b.ino&&a.size===b.size&&a.mtimeMs===b.m
 export async function unlinkedPath(path) {
   const absolute=resolve(path);let part=absolute
   while(part!==parse(part).root){if((await lstat(part)).isSymbolicLink())throw Error('linked_path_forbidden');part=dirname(part)}
-  if(await realpath(absolute)!==absolute)throw Error('linked_path_forbidden')
+  // Windows realpath normalizes drive/directory casing. path.relative uses
+  // Windows path equality; only spelling normalization is accepted after every
+  // ancestor has separately passed the symlink/junction checks above.
+  if(relative(await realpath(absolute),absolute)!=='')throw Error('linked_path_forbidden')
   return absolute
 }
 export async function permittedPath(path,roots) {
   if(!Array.isArray(roots)||!roots.length)throw Error('allowed_game_directory_required')
   const absolute=await unlinkedPath(path)
   let permitted=false
-  for(const root of roots){const reviewed=await unlinkedPath(root);if(reviewed===parse(reviewed).root||reviewed===homedir()||!(await lstat(reviewed)).isDirectory())throw Error('specific_game_directory_required');if(inside(reviewed,absolute))permitted=true}
+  for(const root of roots){const reviewed=await unlinkedPath(root);if(reviewed===parse(reviewed).root||relative(homedir(),reviewed)===''||!(await lstat(reviewed)).isDirectory())throw Error('specific_game_directory_required');if(inside(reviewed,absolute))permitted=true}
   if(!permitted)throw Error('path_outside_allowed_game_directory')
   return absolute
 }

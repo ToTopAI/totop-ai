@@ -92,6 +92,19 @@ Native plugin:
 dsh plugin --profile YOUR_PROFILE add ./totop-ai-0.3.0.tgz --save-prod --ignore-scripts
 ```
 
+Explicit local setup:
+
+```text
+node /absolute/totop-agent.mjs login --profile deepseek
+
+# Merge into YOUR_PROFILE/cordis.patch.yml; do not replace existing entries.
+# Use an explicitly approved game directory (Windows example: C:/Games/my-game).
+- id: totop-ai
+  config:
+    profile: deepseek
+    gameDirectory: /absolute/game
+```
+
 Manual MCP:
 
 ```text
