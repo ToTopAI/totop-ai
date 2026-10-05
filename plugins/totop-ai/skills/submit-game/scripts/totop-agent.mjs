@@ -8050,8 +8050,16 @@ async function unlinkedPath(path) {
     if ((await lstat(part)).isSymbolicLink()) throw Error("linked_path_forbidden");
     part = dirname(part);
   }
-  if (relative(await realpath(absolute), absolute) !== "") throw Error("linked_path_forbidden");
-  return absolute;
+  const canonical = await realpath(absolute);
+  if (relative(canonical, absolute) !== "") {
+    if (process.platform !== "win32" || !same(await lstat(canonical), await lstat(absolute))) throw Error("linked_path_forbidden");
+    let canonicalPart = canonical;
+    while (canonicalPart !== parse(canonicalPart).root) {
+      if ((await lstat(canonicalPart)).isSymbolicLink()) throw Error("linked_path_forbidden");
+      canonicalPart = dirname(canonicalPart);
+    }
+  }
+  return canonical;
 }
 async function permittedPath(path, roots) {
   if (!Array.isArray(roots) || !roots.length) throw Error("allowed_game_directory_required");

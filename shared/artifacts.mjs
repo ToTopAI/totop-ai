@@ -17,11 +17,16 @@ const same=(a,b)=>a.dev===b.dev&&a.ino===b.ino&&a.size===b.size&&a.mtimeMs===b.m
 export async function unlinkedPath(path) {
   const absolute=resolve(path);let part=absolute
   while(part!==parse(part).root){if((await lstat(part)).isSymbolicLink())throw Error('linked_path_forbidden');part=dirname(part)}
-  // Windows realpath normalizes drive/directory casing. path.relative uses
-  // Windows path equality; only spelling normalization is accepted after every
-  // ancestor has separately passed the symlink/junction checks above.
-  if(relative(await realpath(absolute),absolute)!=='')throw Error('linked_path_forbidden')
-  return absolute
+  const canonical=await realpath(absolute)
+  // Windows expands ordinary 8.3 names (e.g. RUNNER~1) as well as casing.
+  // Accept aliases only when both names identify the very same non-link inode,
+  // and check the canonical ancestors too. Never relax junction rejection.
+  if(relative(canonical,absolute)!==''){
+    if(process.platform!=='win32'||!same(await lstat(canonical),await lstat(absolute)))throw Error('linked_path_forbidden')
+    let canonicalPart=canonical
+    while(canonicalPart!==parse(canonicalPart).root){if((await lstat(canonicalPart)).isSymbolicLink())throw Error('linked_path_forbidden');canonicalPart=dirname(canonicalPart)}
+  }
+  return canonical
 }
 export async function permittedPath(path,roots) {
   if(!Array.isArray(roots)||!roots.length)throw Error('allowed_game_directory_required')
