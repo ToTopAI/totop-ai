@@ -1,12 +1,39 @@
-# ToTop MCP — all Agent clients
+# ToTop MCP — Agent execution guide
+
+This document is for an Agent connecting to ToTop and submitting a user's local game. Start by inspecting your actual tools, OAuth state and authorized local-file capabilities. Use generic MCP configuration unless a native plugin is already available; do not assume a particular client or install duplicate connections.
+
+## Start here
+
+1. Read the Agent workflow below, discover the tools and call get_account and get_submission_requirements.
+2. If authentication or local-file tools are missing, guide the user through the relevant setup. Remote MCP cannot read the user's computer; use authorized local tools or the restricted bridge.
+3. Prepare the game and cover, upload and verify each artifact, then submit only with user confirmation.
+4. Check the submitted version's review and deployment results before returning a public playable link.
+
+For the same instructions in the platform's supported languages, open https://creator.totop.ai/agents or https://totop.ai/mcp/.
 
 Canonical setup: https://creator.totop.ai/agents. Legacy /codex bookmarks redirect safely to /agents. Endpoint: https://api.totop.ai/mcp (Streamable HTTP). Browser OAuth issuer: https://auth.totop.ai. No API key or client secret is required.
 
-Plugins **0.3.0** and shared Node helper/bridge **0.1.0**. Requires Node 22+. New installations do not require Python. Download fixed-version packages and SHA256SUMS from https://github.com/ToTopAI/totop-ai/releases/tag/v0.3.0. Official marketplace listing is a separate process, not a prerequisite. Do not silently overwrite existing plugins, MCP entries, profiles or approval settings. Detect duplicate plugin/manual entries and let the user choose which to keep. No auto-submit hooks are installed.
+Plugins **0.3.1** and shared Node helper/bridge **0.1.1**. Requires Node 22+. New installations do not require Python. Download fixed-version packages and SHA256SUMS from https://github.com/ToTopAI/totop-ai/releases/tag/v0.3.1. Official marketplace listing is a separate process, not a prerequisite. Do not silently overwrite existing plugins, MCP entries, profiles or approval settings. Detect duplicate plugin/manual entries and let the user choose which to keep. No auto-submit hooks are installed.
 
 DeepSeek Harness acceptance target: official `@deepseek-ai/dsh` **0.2.0-rc.2**, with `@deepseek-ai/dsh-mcp-client` **0.0.1-rc.1**. Installing the bundle requires registry access for its pinned client dependency, but runs no ToTop build/install hooks. The bundle does not replace your profile.
 
-## Client setup
+## Agent runtime configuration
+
+### MCP
+
+Prefer native Streamable HTTP + browser OAuth with PKCE and resource=https://api.totop.ai/mcp. Dynamic registration and client metadata documents are supported; do not reuse another client identity.
+
+Manual MCP:
+
+```text
+{
+  "mcpServers": {
+    "totop-developer": { "url": "https://api.totop.ai/mcp" }
+  }
+}
+```
+
+Local upload: Use authorized local tools plus the standalone helper. If remote OAuth or local tools are unavailable, use the stdio example below.
 
 ### Claude Code
 
@@ -26,18 +53,6 @@ claude mcp add --transport http totop-developer https://api.totop.ai/mcp
 ```
 
 Local upload: Use authorized local tools and the helper included in the plugin (${CLAUDE_PLUGIN_ROOT}).
-
-### Claude Desktop
-
-Settings → Connectors → Add custom connector → enter the remote MCP URL → Connect. Authorize your ToTop account in the browser.
-
-Manual MCP:
-
-```text
-https://api.totop.ai/mcp
-```
-
-Local upload: Chat and Cowork must be checked separately. Use only local tools actually authorized in this mode; otherwise configure the ToTop stdio bridge.
 
 ### Codex
 
@@ -64,24 +79,15 @@ Local upload: Use authorized local execution tools and the contained Node helper
 
 Project config: .cursor/mcp.json. Global config: ~/.cursor/mcp.json. Enable the connection and complete browser OAuth. One-click MCP adds configuration only, not the full plugin.
 
+Git marketplace installation is the primary path, including personal accounts (confirmed in Cursor 3.20.21). In Cursor, open Customize → Add Marketplace → Import from GitHub, paste https://github.com/ToTopAI/totop-ai, choose Personal / user scope, then install totop-ai. The repository .cursor-plugin/marketplace.json selects the self-contained Cursor adapter. Use marketplace refresh controls for updates. Team administration in Dashboard → Plugins & MCPs is a separate option, not a requirement for personal installation. If your Cursor version lacks Git import, use the local ZIP fallback: extract the Cursor package into ~/.cursor/plugins/local/totop-ai and reload after reviewing any existing folder. Do not copy a Codex cache or overwrite existing configuration. Local installs do not track Git updates automatically. Keep one ToTop MCP connection; one-click MCP config is not a full plugin.
+
 Native plugin:
 
-Teams/Enterprise can import `https://github.com/ToTopAI/totop-ai` from Dashboard
-→ Plugins & MCPs → Add Marketplace → Import from Repo, then install `totop-ai`
-from Customize. The repository's `.cursor-plugin/marketplace.json` points to
-the self-contained Cursor adapter. GitHub Auto Refresh requires the Cursor
-GitHub App; manual refresh is also available. See
-[Cursor plugin installation](https://cursor.com/docs/plugins).
-
-For local installation (including personal accounts without a team marketplace):
-
 ```text
-Extract the Cursor archive into ~/.cursor/plugins/local/totop-ai, then reload Cursor. Do not replace an existing plugin directory without reviewing it.
-```
+In Cursor, open Customize → Add Marketplace → Import from GitHub. Paste the repository below and choose Personal / user scope. Then select totop-ai → Install; authorize ToTop through its MCP connection. Update through the marketplace refresh controls. Keep only one ToTop connection.
 
-Install the Cursor package, not a copied Codex cache. Local installs do not
-automatically track Git updates. Keep only one plugin/manual MCP entry for
-ToTop. One-click MCP installation adds a connection, not the full plugin.
+https://github.com/ToTopAI/totop-ai
+```
 
 Manual MCP:
 
@@ -102,7 +108,7 @@ Run node /absolute/totop-agent.mjs login --profile deepseek first. Bundle insert
 Native plugin:
 
 ```text
-dsh plugin --profile YOUR_PROFILE add ./totop-ai-0.3.0.tgz --save-prod --ignore-scripts
+dsh plugin --profile YOUR_PROFILE add ./totop-ai-0.3.1.tgz --save-prod --ignore-scripts
 ```
 
 Explicit local setup:
@@ -133,25 +139,9 @@ Manual MCP:
 
 Local upload: The restricted bridge adds prepare_local_artifact and upload_local_artifact. Remove with dsh plugin --profile YOUR_PROFILE remove totop-ai.
 
-### MCP
-
-Prefer native Streamable HTTP + browser OAuth with PKCE and resource=https://api.totop.ai/mcp. Dynamic registration and client metadata documents are supported; do not reuse another client identity.
-
-Manual MCP:
-
-```text
-{
-  "mcpServers": {
-    "totop-developer": { "url": "https://api.totop.ai/mcp" }
-  }
-}
-```
-
-Local upload: Use authorized local tools plus the standalone helper. If remote OAuth or local tools are unavailable, use the stdio example below.
-
 ## Local helper and stdio fallback
 
-Download totop-agent-0.1.0.zip from the fixed Release, verify its SHA-256 and extract it to a retained directory. Replace absolute paths below with real paths to an explicitly approved game directory. Windows paths are supported; JSON backslashes must be escaped.
+Download totop-agent-0.1.1.zip from the fixed Release, verify its SHA-256 and extract it to a retained directory. Replace absolute paths below with real paths to an explicitly approved game directory. Windows paths are supported; JSON backslashes must be escaped.
 
 ```sh
 node /absolute/totop-agent.mjs prepare /absolute/game/dist --allow-root /absolute/game --purpose game
@@ -187,7 +177,7 @@ Credentials prefer the optional system keyring (@napi-rs/keyring 2.1.0). Otherwi
 
 Discover protected-resource metadata at https://api.totop.ai/.well-known/oauth-protected-resource/mcp and authorization-server metadata at https://auth.totop.ai/.well-known/oauth-authorization-server. Use browser authorization-code flow with PKCE S256 and resource=https://api.totop.ai/mcp. Pre-registered clients, HTTPS client metadata documents and standard dynamic registration at /oauth/register are supported when new Agent intake is enabled. Dynamic clients have unverified names. Never reuse codex:totop or mcp:totop-bridge as a generic client identity.
 
-Developer scopes only: totop:developer:read, totop:draft:write, totop:upload:write, totop:submission:write. No administrator or game-login scope. Exact redirect matching; native HTTP loopback ports may vary per RFC 8252. No wildcards, custom-scheme callbacks or insecure public HTTP callbacks. Refresh tokens rotate; revoke in Personal center → Agent connections. Accounts retain their shared quotas regardless of the number of clients. Rate limits are not bypassed by switching clients.
+Developer scopes only: totop:developer:read, totop:draft:write, totop:upload:write, totop:submission:write. No administrator or game-login scope. Exact redirect matching; native HTTP loopback ports may vary per RFC 8252. Only Cursor's exact native callback cursor://anysphere.cursor-mcp/oauth/callback is additionally supported; arbitrary custom schemes, wildcards and insecure public HTTP callbacks are rejected. Refresh tokens rotate; revoke in Personal center → Agent connections. Accounts retain their shared quotas regardless of the number of clients. Rate limits are not bypassed by switching clients.
 
 ## Agent workflow — required regardless of client
 
@@ -208,6 +198,6 @@ The platform UI supports en, fr, de, es, pt, it, ja, ko, ar, vi, id, th, zh-CN a
 
 ## Verification status and support
 
-Connection/tool discovery, packaging/schema validation and full end-to-end submission are distinct acceptance levels. See docs/agent-acceptance.md in the repository for client versions, evidence and pending device/account acceptance. Claude Desktop Chat and Cowork are checked separately; neither implies the other's local-file permissions. Claude web is out of scope. No public sandbox, arbitrary remote URL import or legacy SSE-only service is provided.
+Connection/tool discovery, packaging/schema validation and full end-to-end submission are distinct acceptance levels. See docs/agent-acceptance.md in the repository for client versions, evidence and pending device/account acceptance. Inspect each session's actual permissions; one mode's local-file access does not prove another mode has it. Claude web is out of scope. No public sandbox, arbitrary remote URL import or legacy SSE-only service is provided.
 
 Report client version, tool name, correlation ID and redacted error code, never credentials or game contents. Manage grants at https://creator.totop.ai/agents and submissions at https://creator.totop.ai/releases.

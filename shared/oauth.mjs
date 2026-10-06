@@ -2,6 +2,7 @@ import { createServer } from 'node:http'
 import { randomBytes } from 'node:crypto'
 import { spawn } from 'node:child_process'
 import { auth } from '@modelcontextprotocol/sdk/client/auth.js'
+import { callbackPage, callbackLocale } from './oauth-page.mjs'
 
 export const ENDPOINT='https://api.totop.ai/mcp',ISSUER='https://auth.totop.ai'
 export const SCOPES='totop:developer:read totop:draft:write totop:upload:write totop:submission:write'
@@ -26,10 +27,11 @@ export class BridgeAuth {
     let timer
     try{
       const completion=new Promise((resolve,reject)=>{timer=setTimeout(()=>reject(Error('authorization_timeout')),300000);timer.unref();server.on('request',(req,res)=>{
-        const url=new URL(req.url,'http://127.0.0.1');if(req.method!=='GET'||url.pathname!=='/totop/callback'||url.searchParams.getAll('state').length!==1||url.searchParams.get('state')!==this.stateValue){res.writeHead(400).end('Invalid authorization callback');return}
-        if(url.searchParams.has('iss')&&(url.searchParams.getAll('iss').length!==1||url.searchParams.get('iss')!==ISSUER)){res.writeHead(400).end('Invalid authorization issuer');return}
-        const code=url.searchParams.get('code');if(!code||url.searchParams.getAll('code').length!==1||url.searchParams.has('error')){res.writeHead(400).end('Authorization declined');clearTimeout(timer);reject(Error('authorization_declined'));return}
-        clearTimeout(timer);res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'"}).end('<h1>ToTop authorization received</h1><p>Return to your Agent to confirm the connection result. You can close this tab.</p>');resolve(code)
+        const respond=(status,state)=>{const page=callbackPage({state,language:callbackLocale(req.headers['accept-language'])});res.writeHead(status,page.headers).end(page.html)}
+        const url=new URL(req.url,'http://127.0.0.1');if(req.method!=='GET'||url.pathname!=='/totop/callback'||url.searchParams.getAll('state').length!==1||url.searchParams.get('state')!==this.stateValue){respond(400,'error');return}
+        if(url.searchParams.has('iss')&&(url.searchParams.getAll('iss').length!==1||url.searchParams.get('iss')!==ISSUER)){respond(400,'error');return}
+        const code=url.searchParams.get('code');if(!code||url.searchParams.getAll('code').length!==1||url.searchParams.has('error')){respond(400,'error');clearTimeout(timer);reject(Error('authorization_declined'));return}
+        clearTimeout(timer);respond(200,'received');resolve(code)
       })});completion.catch(()=>{})
       const result=await auth(this,{serverUrl:ENDPOINT,scope:SCOPES,fetchFn:safeFetch})
       if(result!=='REDIRECT'||!this.authorizationUrl)throw Error('authorization_start_failed')

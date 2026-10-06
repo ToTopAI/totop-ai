@@ -45,6 +45,6 @@ export async function main(argv=process.argv.slice(2)) {
     const client=await connectRemote(auth);try{const response=await client.callTool({name:'get_account',arguments:{}});if(response.isError)throw Error('account_unavailable');const data=JSON.parse(response.content.find(x=>x.type==='text').text);print({status:'connected',profile:options.profile,accountId:data.accountId,creatorReady:data.creatorReady})}finally{await client.close()}return
   }
   if(command==='serve'){if(!options.roots.length)throw Error('allowed_game_directory_required');return serve({auth,roots:options.roots,outputDirectory})}
-  if(command==='--version'||command==='version')return print({helper:'0.1.0',plugins:'0.3.0'})
-  process.stderr.write('ToTop Agent 0.1.0 (Node 22+)\nCommands: prepare BUILD --allow-root GAME_DIR [--purpose game|cover]; upload FILE < private-receipt.json; login; logout; status; serve --allow-root GAME_DIR. Optional: --profile NAME.\n')
+  if(command==='--version'||command==='version')return print({helper:'0.1.1',plugins:'0.3.1'})
+  process.stderr.write('ToTop Agent 0.1.1 (Node 22+)\nCommands: prepare BUILD --allow-root GAME_DIR [--purpose game|cover]; upload FILE < private-receipt.json; login; logout; status; serve --allow-root GAME_DIR. Optional: --profile NAME.\n')
 }

@@ -1,4 +1,4 @@
-# totop-ai 0.3.0
+# totop-ai 0.3.1
 
 Submit local HTML5 and WebGL games to ToTop using MCP and browser OAuth.
 
