@@ -25,7 +25,7 @@ Canonical setup: https://creator.totop.ai/agents. Legacy /codex bookmarks redire
 
 Plugins **0.4.2** and shared Node helper/bridge **0.2.1**. Requires Node 22+. New installations do not require Python. Download fixed-version packages and SHA256SUMS from https://github.com/ToTopAI/totop-ai/releases/tag/v0.4.2. Official marketplace listing is a separate process, not a prerequisite. Do not silently overwrite existing plugins, MCP entries, profiles or approval settings. Detect duplicate plugin/manual entries and let the user choose which to keep. No auto-submit hooks are installed.
 
-DeepSeek Harness acceptance target: official `@deepseek-ai/dsh` **0.2.1-rc.2**, with `@deepseek-ai/dsh-mcp-client` **0.0.1-rc.1**. Installing the bundle requires registry access for its pinned client dependency, but runs no ToTop build/install hooks. The bundle does not replace your profile.
+DeepSeek Harness acceptance target remains official `@deepseek-ai/dsh` **0.2.0-rc.2**, with `@deepseek-ai/dsh-mcp-client` **0.0.1-rc.1**. The ToTop helper version does not change this client target. Installing the bundle requires registry access for its pinned client dependency, but runs no ToTop build/install hooks. The bundle does not replace your profile.
 
 ## Agent runtime configuration
 
