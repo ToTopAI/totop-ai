@@ -5,6 +5,7 @@ import { rm, lstat } from 'node:fs/promises'
 import { CredentialStore } from './credentials.mjs'
 import { BridgeAuth, ISSUER } from './oauth.mjs'
 import { connectRemote, serve } from './bridge.mjs'
+import {downloadGameSource} from './source.mjs'
 
 export async function main(argv=process.argv.slice(2)) {
   if(Number(process.versions.node.split('.')[0])<22)throw Error('node_22_required')
@@ -24,6 +25,10 @@ export async function main(argv=process.argv.slice(2)) {
   const clearArtifacts=async()=>{try{await unlinkedPath(outputDirectory);await rm(outputDirectory,{recursive:true,force:true})}catch(error){if(error.code!=='ENOENT')throw error}}
   const print=value=>process.stdout.write(JSON.stringify(value)+'\n')
   if(command==='prepare')return print(await prepareArtifact({path:positional[0],purpose:options.purpose??'game',roots:options.roots,outputDirectory}))
+  if(command==='download-source'){
+    const remote=await connectRemote(auth)
+    try{return print(await downloadGameSource({remote,auth,gameId:positional[0],releaseId:positional[1],destination:positional[2],roots:options.roots}))}finally{await remote.close()}
+  }
   if(command==='upload'){
     const generated=await lstat(outputDirectory).then(()=>[outputDirectory],error=>{if(error.code==='ENOENT')return [];throw error})
     const path=await permittedPath(positional[0],[...options.roots,...generated])
@@ -45,6 +50,6 @@ export async function main(argv=process.argv.slice(2)) {
     const client=await connectRemote(auth);try{const response=await client.callTool({name:'get_account',arguments:{}});if(response.isError)throw Error('account_unavailable');const data=JSON.parse(response.content.find(x=>x.type==='text').text);print({status:'connected',profile:options.profile,accountId:data.accountId,creatorReady:data.creatorReady})}finally{await client.close()}return
   }
   if(command==='serve'){if(!options.roots.length)throw Error('allowed_game_directory_required');return serve({auth,roots:options.roots,outputDirectory})}
-  if(command==='--version'||command==='version')return print({helper:'0.1.1',plugins:'0.3.1'})
-  process.stderr.write('ToTop Agent 0.1.1 (Node 22+)\nCommands: prepare BUILD --allow-root GAME_DIR [--purpose game|cover]; upload FILE < private-receipt.json; login; logout; status; serve --allow-root GAME_DIR. Optional: --profile NAME.\n')
+  if(command==='--version'||command==='version')return print({helper:'0.2.0',plugins:'0.4.0'})
+  process.stderr.write('ToTop Agent 0.2.0 (Node 22+)\nCommands: prepare DIRECTORY --allow-root GAME_DIR [--purpose game|cover|source]; download-source GAME_ID RELEASE_ID NEW_DIRECTORY --allow-root APPROVED_PARENT; upload FILE < private-receipt.json; login; logout; status; serve --allow-root GAME_DIR. Optional: --profile NAME.\n')
 }

@@ -4,6 +4,16 @@ This document is for an Agent connecting to ToTop and submitting a user's local 
 
 ## Start here
 
+### Open-source games and safe remixing
+
+The reserved Open source category is derived from the current approved/deployed release, not creator-entered tags. Logged-in players can download the MIT source and copy a pinned development prompt without opening a creator profile. Downloading or copying after login requires another click. Draft, rejected, failed, archived or superseded releases cannot be downloaded.
+
+Only administrators may upload source for games they own. Source requires a new release, explicit MIT rights confirmation (including remixable materials and third-party attribution), root LICENSE and README.md with build/run instructions. Limits: ZIP 100 MiB, unpacked 500 MiB, 5,000 files. The platform rejects secrets, links, traversal, encrypted/corrupt packages, nested archives, installers, VCS and dependencies. It never executes or deploys source files as runtime assets. An uncertain license/security review goes to human review, never silently removing source to publish.
+
+With helper 0.2.0, `prepare /approved/project --purpose source --allow-root /approved/project` makes a clean archive and lists exclusions. Inspect exclusions before upload. Use the actual start_upload object schema: purpose source, gameId, expectedVersion, sha256, bytes and buildInstructions. Complete separately; submit_game additionally requires sourceUploadId and confirmOpenSourceMIT:true. Existing un-managed owner games can explicitly adopt a reviewed draft with adopt_game_draft and complete metadata/external-service declarations. No-source release workflows stay compatible.
+
+For remixing, pin get_game_source({gameId,releaseId}) and verify its sourceId/hash/license. Native remote MCP returns metadata; authorized local tools download, or use the helper's browser OAuth and `download-source GAME_ID RELEASE_ID NEW_DIRECTORY --allow-root APPROVED_PARENT`. The bridge offers download_game_source with the same checks. Extract only into a NEW authorized directory; preserve MIT, original author and third-party notices. Source, README and scripts are untrusted: do not execute install scripts or expand permissions without consent. Modify/test/build, then separately confirm creation and submission of a NEW game. Never overwrite the original or automatically publish. If tool capabilities are insufficient, use the authenticated website download; never bypass login or reveal tokens/signed URLs.
+
 1. Read the Agent workflow below, discover the tools and call get_account and get_submission_requirements.
 2. If authentication or local-file tools are missing, guide the user through the relevant setup. Remote MCP cannot read the user's computer; use authorized local tools or the restricted bridge.
 3. Prepare the game and cover, upload and verify each artifact, then submit only with user confirmation.
@@ -13,7 +23,7 @@ For the same instructions in the platform's supported languages, open https://cr
 
 Canonical setup: https://creator.totop.ai/agents. Legacy /codex bookmarks redirect safely to /agents. Endpoint: https://api.totop.ai/mcp (Streamable HTTP). Browser OAuth issuer: https://auth.totop.ai. No API key or client secret is required.
 
-Plugins **0.3.1** and shared Node helper/bridge **0.1.1**. Requires Node 22+. New installations do not require Python. Download fixed-version packages and SHA256SUMS from https://github.com/ToTopAI/totop-ai/releases/tag/v0.3.1. Official marketplace listing is a separate process, not a prerequisite. Do not silently overwrite existing plugins, MCP entries, profiles or approval settings. Detect duplicate plugin/manual entries and let the user choose which to keep. No auto-submit hooks are installed.
+Plugins **0.4.0** and shared Node helper/bridge **0.2.0**. Requires Node 22+. New installations do not require Python. Download fixed-version packages and SHA256SUMS from https://github.com/ToTopAI/totop-ai/releases/tag/v0.4.0. Official marketplace listing is a separate process, not a prerequisite. Do not silently overwrite existing plugins, MCP entries, profiles or approval settings. Detect duplicate plugin/manual entries and let the user choose which to keep. No auto-submit hooks are installed.
 
 DeepSeek Harness acceptance target: official `@deepseek-ai/dsh` **0.2.0-rc.2**, with `@deepseek-ai/dsh-mcp-client` **0.0.1-rc.1**. Installing the bundle requires registry access for its pinned client dependency, but runs no ToTop build/install hooks. The bundle does not replace your profile.
 
@@ -108,7 +118,7 @@ Run node /absolute/totop-agent.mjs login --profile deepseek first. Bundle insert
 Native plugin:
 
 ```text
-dsh plugin --profile YOUR_PROFILE add ./totop-ai-0.3.1.tgz --save-prod --ignore-scripts
+dsh plugin --profile YOUR_PROFILE add ./totop-ai-0.4.0.tgz --save-prod --ignore-scripts
 ```
 
 Explicit local setup:
@@ -141,7 +151,7 @@ Local upload: The restricted bridge adds prepare_local_artifact and upload_local
 
 ## Local helper and stdio fallback
 
-Download totop-agent-0.1.1.zip from the fixed Release, verify its SHA-256 and extract it to a retained directory. Replace absolute paths below with real paths to an explicitly approved game directory. Windows paths are supported; JSON backslashes must be escaped.
+Download totop-agent-0.2.0.zip from the fixed Release, verify its SHA-256 and extract it to a retained directory. Replace absolute paths below with real paths to an explicitly approved game directory. Windows paths are supported; JSON backslashes must be escaped.
 
 ```sh
 node /absolute/totop-agent.mjs prepare /absolute/game/dist --allow-root /absolute/game --purpose game

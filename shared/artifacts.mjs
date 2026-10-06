@@ -62,7 +62,7 @@ async function inventory(root) {
 }
 export async function prepareArtifact({path,purpose,roots,outputDirectory}) {
   const source=await permittedPath(path,roots)
-  let data,type,count
+  let data,type,count,excluded
   if(purpose==='game'){
     if(!(await lstat(source)).isDirectory())throw Error('game_build_directory_required')
     const files=await inventory(source);if(!files.some(x=>x.name==='index.html'))throw Error('root_index_html_required')
@@ -72,18 +72,22 @@ export async function prepareArtifact({path,purpose,roots,outputDirectory}) {
     if(after.length!==files.length||after.some((x,i)=>x.name!==files[i].name||!same(x.info,files[i].info)))throw Error('build_changed')
     data=Buffer.from(zipSync(entries,{level:6}));type='application/zip';count=files.length
     if(data.length>ZIP_LIMIT)throw Error('zip_upload_limit_exceeded')
+  }else if(purpose==='source'){
+    if(!(await lstat(source)).isDirectory())throw Error('source_directory_required')
+    const prepared=await (await import('./source.mjs')).prepareSourceDirectory(source)
+    data=prepared.data;count=prepared.files;excluded=prepared.excluded;type='application/zip'
   }else if(purpose==='cover'){data=await readStable(source,COVER_LIMIT);type=contentType(data)}else throw Error('invalid_artifact_purpose')
   await mkdir(outputDirectory,{recursive:true,mode:0o700});await unlinkedPath(outputDirectory)
   if(inside(source,resolve(outputDirectory)))throw Error('output_inside_build')
-  const artifactHandle=randomUUID(),destination=resolve(outputDirectory,artifactHandle+(purpose==='game'?'.zip':type==='image/png'?'.png':type==='image/jpeg'?'.jpg':'.webp'))
+  const artifactHandle=randomUUID(),destination=resolve(outputDirectory,artifactHandle+(type==='application/zip'?'.zip':type==='image/png'?'.png':type==='image/jpeg'?'.jpg':'.webp'))
   const handle=await open(destination,'wx',0o600);try{await handle.writeFile(data)}finally{await handle.close()}
-  return {artifactHandle,path:destination,sha256:createHash('sha256').update(data).digest('hex'),bytes:data.length,contentType:type,purpose,...(count?{files:count}:{})}
+  return {artifactHandle,path:destination,sha256:createHash('sha256').update(data).digest('hex'),bytes:data.length,contentType:type,purpose,...(count?{files:count}:{}),...(excluded?{excluded}:{})}
 }
 export function validateReceipt(receipt) {
   if(!receipt||receipt.method!=='PUT'||typeof receipt.uploadUrl!=='string')throw Error('invalid_upload_receipt')
   const url=new URL(receipt.uploadUrl),account=/^[a-f0-9]{32}\.r2\.cloudflarestorage\.com$/.test(url.hostname),bucket=/^[a-z0-9][a-z0-9-]*\.[a-f0-9]{32}\.r2\.cloudflarestorage\.com$/.test(url.hostname)
   const path=bucket?url.pathname:account?url.pathname.replace(/^\/[a-z0-9][a-z0-9-]*(?=\/)/,''):''
-  if(url.protocol!=='https:'||url.username||url.password||url.hash||url.port&&url.port!=='443'||!/^\/(?:packages\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/game\.zip|release-media\/v1\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/source\.(?:png|jpg|webp))$/.test(path))throw Error('untrusted_upload_target')
+  if(url.protocol!=='https:'||url.username||url.password||url.hash||url.port&&url.port!=='443'||!/^\/(?:packages\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/game\.zip|game-sources\/v1\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/source\.zip|release-media\/v1\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/source\.(?:png|jpg|webp))$/.test(path))throw Error('untrusted_upload_target')
   if(url.searchParams.getAll('X-Amz-Signature').length!==1||!/^[a-f0-9]{64}$/.test(url.searchParams.get('X-Amz-Signature')??''))throw Error('unsigned_upload_target')
   const type=receipt.headers?.['Content-Type']
   if(!['application/zip','image/png','image/jpeg','image/webp'].includes(type)||JSON.stringify(Object.keys(receipt.headers).sort())!==JSON.stringify(['Content-Type','If-None-Match'])||receipt.headers['If-None-Match']!=='*')throw Error('unexpected_upload_headers')
