@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto'
 import {inflateRawSync} from 'node:zlib'
 import {lstat,mkdir,open,readdir,rm} from 'node:fs/promises'
-import {resolve,dirname,relative,extname} from 'node:path'
+import {resolve,dirname,relative,extname,basename} from 'node:path'
 import {zipSync} from 'fflate'
 import {permittedPath,readStable,unlinkedPath,ZIP_LIMIT} from './artifacts.mjs'
 import {ENDPOINT} from './oauth.mjs'
@@ -74,8 +74,10 @@ export async function prepareSourceDirectory(root){
   return {data,files:files.length,excluded}
 }
 export async function extractSourceNewDirectory(data,sha256,destination,roots){
-  const entries=inspectSourceZip(data,sha256),target=resolve(destination),parent=await permittedPath(dirname(target),roots)
-  if(target!==resolve(parent,relative(parent,target))||relative(parent,target).includes('..'))throw Error('source_destination_invalid')
+  const entries=inspectSourceZip(data,sha256),requested=resolve(destination),parent=await permittedPath(dirname(requested),roots)
+  // Canonical parent may expand a legitimate Windows 8.3 alias. Its ancestry
+  // was already checked for links/junctions; create only the validated new child.
+  const name=basename(requested);safeName(name);const target=resolve(parent,name)
   await mkdir(target,{mode:0o700}) // exclusive: never replace or merge an existing project
   try{await unlinkedPath(target);for(const entry of entries){const path=resolve(target,entry.name);await mkdir(dirname(path),{recursive:true,mode:0o700});await unlinkedPath(dirname(path));const fd=await open(path,'wx',0o600);try{await fd.writeFile(entry.data)}finally{await fd.close()}}return {directory:target,files:entries.length,sha256}}
   catch(error){await unlinkedPath(target);await rm(target,{recursive:true});throw error}

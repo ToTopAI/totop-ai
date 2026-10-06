@@ -17,7 +17,7 @@ test('Cursor personal Git marketplace is the default in all 14 locales',()=>{
   assert.ok(copy.fallback.includes('~/.cursor/plugins/local/totop-ai'))
   for(const value of Object.values(copy))assert.ok(value.trim())
  }
- assert.ok(clientGuides.cursor.download.includes('v0.4.0'))
+ assert.ok(clientGuides.cursor.download.includes('v0.4.1'))
 })
 
 test('Agent-first copy covers all 14 locales and five runtime entries',()=>{

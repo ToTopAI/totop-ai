@@ -50,6 +50,6 @@ export async function main(argv=process.argv.slice(2)) {
     const client=await connectRemote(auth);try{const response=await client.callTool({name:'get_account',arguments:{}});if(response.isError)throw Error('account_unavailable');const data=JSON.parse(response.content.find(x=>x.type==='text').text);print({status:'connected',profile:options.profile,accountId:data.accountId,creatorReady:data.creatorReady})}finally{await client.close()}return
   }
   if(command==='serve'){if(!options.roots.length)throw Error('allowed_game_directory_required');return serve({auth,roots:options.roots,outputDirectory})}
-  if(command==='--version'||command==='version')return print({helper:'0.2.0',plugins:'0.4.0'})
-  process.stderr.write('ToTop Agent 0.2.0 (Node 22+)\nCommands: prepare DIRECTORY --allow-root GAME_DIR [--purpose game|cover|source]; download-source GAME_ID RELEASE_ID NEW_DIRECTORY --allow-root APPROVED_PARENT; upload FILE < private-receipt.json; login; logout; status; serve --allow-root GAME_DIR. Optional: --profile NAME.\n')
+  if(command==='--version'||command==='version')return print({helper:'0.2.1',plugins:'0.4.1'})
+  process.stderr.write('ToTop Agent 0.2.1 (Node 22+)\nCommands: prepare DIRECTORY --allow-root GAME_DIR [--purpose game|cover|source]; download-source GAME_ID RELEASE_ID NEW_DIRECTORY --allow-root APPROVED_PARENT; upload FILE < private-receipt.json; login; logout; status; serve --allow-root GAME_DIR. Optional: --profile NAME.\n')
 }
