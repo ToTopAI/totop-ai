@@ -66,9 +66,22 @@ Project config: .cursor/mcp.json. Global config: ~/.cursor/mcp.json. Enable the 
 
 Native plugin:
 
+Teams/Enterprise can import `https://github.com/ToTopAI/totop-ai` from Dashboard
+→ Plugins & MCPs → Add Marketplace → Import from Repo, then install `totop-ai`
+from Customize. The repository's `.cursor-plugin/marketplace.json` points to
+the self-contained Cursor adapter. GitHub Auto Refresh requires the Cursor
+GitHub App; manual refresh is also available. See
+[Cursor plugin installation](https://cursor.com/docs/plugins).
+
+For local installation (including personal accounts without a team marketplace):
+
 ```text
 Extract the Cursor archive into ~/.cursor/plugins/local/totop-ai, then reload Cursor. Do not replace an existing plugin directory without reviewing it.
 ```
+
+Install the Cursor package, not a copied Codex cache. Local installs do not
+automatically track Git updates. Keep only one plugin/manual MCP entry for
+ToTop. One-click MCP installation adds a connection, not the full plugin.
 
 Manual MCP:
 
