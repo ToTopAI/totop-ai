@@ -23,7 +23,7 @@ For the same instructions in the platform's supported languages, open https://cr
 
 Canonical setup: https://creator.totop.ai/agents. Legacy /codex bookmarks redirect safely to /agents. Endpoint: https://api.totop.ai/mcp (Streamable HTTP). Browser OAuth issuer: https://auth.totop.ai. No API key or client secret is required.
 
-Plugins **0.4.1** and shared Node helper/bridge **0.2.1**. Requires Node 22+. New installations do not require Python. Download fixed-version packages and SHA256SUMS from https://github.com/ToTopAI/totop-ai/releases/tag/v0.4.1. Official marketplace listing is a separate process, not a prerequisite. Do not silently overwrite existing plugins, MCP entries, profiles or approval settings. Detect duplicate plugin/manual entries and let the user choose which to keep. No auto-submit hooks are installed.
+Plugins **0.4.2** and shared Node helper/bridge **0.2.1**. Requires Node 22+. New installations do not require Python. Download fixed-version packages and SHA256SUMS from https://github.com/ToTopAI/totop-ai/releases/tag/v0.4.2. Official marketplace listing is a separate process, not a prerequisite. Do not silently overwrite existing plugins, MCP entries, profiles or approval settings. Detect duplicate plugin/manual entries and let the user choose which to keep. No auto-submit hooks are installed.
 
 DeepSeek Harness acceptance target: official `@deepseek-ai/dsh` **0.2.1-rc.2**, with `@deepseek-ai/dsh-mcp-client` **0.0.1-rc.1**. Installing the bundle requires registry access for its pinned client dependency, but runs no ToTop build/install hooks. The bundle does not replace your profile.
 
@@ -118,7 +118,7 @@ Run node /absolute/totop-agent.mjs login --profile deepseek first. Bundle insert
 Native plugin:
 
 ```text
-dsh plugin --profile YOUR_PROFILE add ./totop-ai-0.4.1.tgz --save-prod --ignore-scripts
+dsh plugin --profile YOUR_PROFILE add ./totop-ai-0.4.2.tgz --save-prod --ignore-scripts
 ```
 
 Explicit local setup:

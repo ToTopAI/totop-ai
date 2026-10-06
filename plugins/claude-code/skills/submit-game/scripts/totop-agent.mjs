@@ -21338,7 +21338,7 @@ async function main(argv = process.argv.slice(2)) {
     if (!options.roots.length) throw Error("allowed_game_directory_required");
     return serve({ auth: auth2, roots: options.roots, outputDirectory });
   }
-  if (command === "--version" || command === "version") return print({ helper: "0.2.1", plugins: "0.4.1" });
+  if (command === "--version" || command === "version") return print({ helper: "0.2.1", plugins: "0.4.2" });
   process.stderr.write("ToTop Agent 0.2.1 (Node 22+)\nCommands: prepare DIRECTORY --allow-root GAME_DIR [--purpose game|cover|source]; download-source GAME_ID RELEASE_ID NEW_DIRECTORY --allow-root APPROVED_PARENT; upload FILE < private-receipt.json; login; logout; status; serve --allow-root GAME_DIR. Optional: --profile NAME.\n");
 }
 
