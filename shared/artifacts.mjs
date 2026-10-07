@@ -7,6 +7,8 @@ import { request } from 'node:https'
 import { zipSync } from 'fflate'
 
 export const ZIP_LIMIT=100*1024*1024, COVER_LIMIT=10*1024*1024
+// Runtime limits match the server. Source archives retain the stricter ZIP_LIMIT.
+export const GAME_ZIP_LIMIT=200*1024*1024, GAME_FILE_LIMIT=20000
 const forbidden=new Set(['.git','.hg','.svn','node_modules','.ssh','.aws','.npmrc','.pypirc','credentials','id_rsa','id_ed25519'])
 const allowed=new Set('.html .htm .js .mjs .css .json .wasm .data .bin .unityweb .pck .gz .br .png .jpg .jpeg .webp .gif .svg .ico .avif .ktx .ktx2 .basis .mp3 .ogg .wav .m4a .mp4 .webm .woff .woff2 .ttf .otf .glb .gltf .obj .mtl .txt .xml'.split(' '))
 const secret=/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|(?:AKIA|ASIA)[A-Z0-9]{16}|\bsk-[A-Za-z0-9_-]{32,}/
@@ -56,7 +58,7 @@ async function inventory(root) {
     if(name.split('/').some(x=>forbidden.has(x.toLowerCase())||x.toLowerCase().startsWith('.env'))||/[\x00-\x1f\x7f\\]/.test(item))throw Error('sensitive_or_unsafe_build_file')
     if(info.isDirectory()){await walk(path);continue}
     if(!info.isFile()||!allowed.has(extname(path).toLowerCase()))throw Error('unsupported_build_file')
-    total+=info.size;if(info.size>ZIP_LIMIT||total>500*1024*1024||files.length>=5000)throw Error('build_limit_exceeded')
+    total+=info.size;if(info.size>GAME_ZIP_LIMIT||total>500*1024*1024||files.length>=GAME_FILE_LIMIT)throw Error('build_limit_exceeded')
     files.push({path,name,info})
   }}await walk(root);return files
 }
@@ -67,11 +69,11 @@ export async function prepareArtifact({path,purpose,roots,outputDirectory}) {
     if(!(await lstat(source)).isDirectory())throw Error('game_build_directory_required')
     const files=await inventory(source);if(!files.some(x=>x.name==='index.html'))throw Error('root_index_html_required')
     const entries={}
-    for(const file of files){const bytes=await readStable(file.path,ZIP_LIMIT,file.info,true);if(secret.test(bytes.toString('latin1')))throw Error('possible_secret_in_build');entries[file.name]=[bytes,{mtime:new Date('2020-01-01T00:00:00Z')}]}
+    for(const file of files){const bytes=await readStable(file.path,GAME_ZIP_LIMIT,file.info,true);if(secret.test(bytes.toString('latin1')))throw Error('possible_secret_in_build');entries[file.name]=[bytes,{mtime:new Date('2020-01-01T00:00:00Z')}]}
     const after=await inventory(source)
     if(after.length!==files.length||after.some((x,i)=>x.name!==files[i].name||!same(x.info,files[i].info)))throw Error('build_changed')
     data=Buffer.from(zipSync(entries,{level:6}));type='application/zip';count=files.length
-    if(data.length>ZIP_LIMIT)throw Error('zip_upload_limit_exceeded')
+    if(data.length>GAME_ZIP_LIMIT)throw Error('zip_upload_limit_exceeded')
   }else if(purpose==='source'){
     if(!(await lstat(source)).isDirectory())throw Error('source_directory_required')
     const prepared=await (await import('./source.mjs')).prepareSourceDirectory(source)
@@ -91,7 +93,10 @@ export function validateReceipt(receipt) {
   if(url.searchParams.getAll('X-Amz-Signature').length!==1||!/^[a-f0-9]{64}$/.test(url.searchParams.get('X-Amz-Signature')??''))throw Error('unsigned_upload_target')
   const type=receipt.headers?.['Content-Type']
   if(!['application/zip','image/png','image/jpeg','image/webp'].includes(type)||JSON.stringify(Object.keys(receipt.headers).sort())!==JSON.stringify(['Content-Type','If-None-Match'])||receipt.headers['If-None-Match']!=='*')throw Error('unexpected_upload_headers')
-  if(!/^[a-f0-9]{64}$/.test(receipt.sha256)||!Number.isSafeInteger(receipt.bytes)||receipt.bytes<1||receipt.bytes>(type==='application/zip'?ZIP_LIMIT:COVER_LIMIT))throw Error('invalid_artifact_identity')
+  const game=path.startsWith('/packages/'),source=path.startsWith('/game-sources/')
+  if((game||source)!==(type==='application/zip'))throw Error('unexpected_upload_headers')
+  const limit=game?GAME_ZIP_LIMIT:source?ZIP_LIMIT:COVER_LIMIT
+  if(!/^[a-f0-9]{64}$/.test(receipt.sha256)||!Number.isSafeInteger(receipt.bytes)||receipt.bytes<1||receipt.bytes>limit)throw Error('invalid_artifact_identity')
   return url
 }
 export async function uploadArtifact(path,receipt,{signal,send=sendPut}={}) {

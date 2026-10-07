@@ -8,11 +8,25 @@ import { createHash } from 'node:crypto'
 import { unzipSync } from 'fflate'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { prepareArtifact, permittedPath, readStable, uploadArtifact, validateReceipt } from '../shared/artifacts.mjs'
+import { prepareArtifact, permittedPath, readStable, uploadArtifact, validateReceipt, GAME_ZIP_LIMIT, GAME_FILE_LIMIT, ZIP_LIMIT } from '../shared/artifacts.mjs'
 import { CredentialStore } from '../shared/credentials.mjs'
 import { serve } from '../shared/bridge.mjs'
 const fixture=async t=>{const dir=await mkdtemp(resolve(realpathSync(tmpdir()),'totop-agent-'));t.after(()=>rm(dir,{recursive:true,force:true}));const game=resolve(dir,'game');await mkdir(game);await writeFile(resolve(game,'index.html'),'<html>game</html>');return {dir,game,outputDirectory:resolve(dir,'artifacts')}}
 const receipt=data=>({uploadId:'upload-test',method:'PUT',uploadUrl:'https://'+ 'a'.repeat(32)+'.r2.cloudflarestorage.com/bucket/packages/11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222/game.zip?X-Amz-Signature='+'b'.repeat(64),headers:{'Content-Type':'application/zip','If-None-Match':'*'},sha256:createHash('sha256').update(data).digest('hex'),bytes:data.length,expiresInSeconds:600})
+test('runtime receipts support 200 MiB while source receipts retain 100 MiB and reject type confusion',()=>{
+  assert.equal(GAME_ZIP_LIMIT,200*1024*1024);assert.equal(GAME_FILE_LIMIT,20000);assert.equal(ZIP_LIMIT,100*1024*1024)
+  const r={...receipt(Buffer.from('fixture')),bytes:159400916}
+  assert.ok(validateReceipt(r));assert.throws(()=>validateReceipt({...r,bytes:GAME_ZIP_LIMIT+1}),/identity/)
+  const source={...r,uploadUrl:r.uploadUrl.replace('/packages/','/game-sources/v1/').replace('/game.zip','/source.zip')}
+  assert.throws(()=>validateReceipt(source),/identity/);assert.ok(validateReceipt({...source,bytes:ZIP_LIMIT}))
+  assert.throws(()=>validateReceipt({...r,headers:{...r.headers,'Content-Type':'image/png'}}),/headers/)
+})
+test('runtime inventory accepts more than 5000 files without relaxing source inventory',async t=>{
+  const f=await fixture(t)
+  for(let i=0;i<5000;i++)await writeFile(resolve(f.game,`asset-${i}.txt`),'')
+  const artifact=await prepareArtifact({path:f.game,purpose:'game',roots:[f.game],outputDirectory:f.outputDirectory})
+  assert.equal(artifact.files,5001)
+})
 test('prepare confines paths, excludes secrets/links, checks file changes and produces real ZIP identity',async t=>{
   const f=await fixture(t);await writeFile(resolve(f.game,'empty.txt'),'')
   const artifact=await prepareArtifact({path:f.game,purpose:'game',roots:[f.game],outputDirectory:f.outputDirectory})

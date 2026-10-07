@@ -3,7 +3,7 @@ import { readFile, lstat, readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { createHash } from 'node:crypto'
 const root=resolve(import.meta.dirname,'..'),manifest=JSON.parse(await readFile(resolve(root,'distribution.json')))
-assert.equal(manifest.version,'0.4.2');assert.equal(manifest.helperVersion,'0.2.1')
+assert.equal(manifest.version,'0.4.3');assert.equal(manifest.helperVersion,'0.2.2')
 const expected=new Set(['.agents/plugins/marketplace.json','.claude-plugin/marketplace.json','.cursor-plugin/marketplace.json',
  ...['totop-ai','claude-code','cursor'].flatMap(dir=>[`plugins/${dir}/${dir==='totop-ai'?'.codex':dir==='claude-code'?'.claude':'.cursor'}-plugin/plugin.json`,`plugins/${dir}/${dir==='cursor'?'mcp.json':'.mcp.json'}`,`plugins/${dir}/README.md`,`plugins/${dir}/skills/submit-game/SKILL.md`,`plugins/${dir}/skills/submit-game/scripts/totop-agent.mjs`]),
  ...['package_game.py','upload_game.py'].map(name=>'plugins/totop-ai/skills/submit-game/scripts/'+name),
