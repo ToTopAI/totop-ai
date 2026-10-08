@@ -31,6 +31,8 @@ DeepSeek Harness acceptance target remains official `@deepseek-ai/dsh` **0.2.0-r
 
 ## Agent runtime configuration
 
+Managed games receive a stable `<slug>.games.totop.ai` runtime origin at creation. Always use the server launch contract; never derive or copy a shared runtime URL. Public results and sharing must continue to use the official `totop.ai/games/<slug>` detail link. Runtime origins do not imply review or deployment success, and changing a title does not change the slug or origin.
+
 @@CLIENTS@@
 
 ## Local helper and stdio fallback
