@@ -13,18 +13,19 @@ export class BridgeAuth {
   get clientMetadata(){return {client_name:'ToTop local bridge',redirect_uris:[this.redirect],token_endpoint_auth_method:'none',grant_types:['authorization_code','refresh_token'],response_types:['code'],scope:SCOPES}}
   clientInformation(){return {client_id:'mcp:totop-bridge',issuer:ISSUER}}
   async tokens(){return this.memory??(this.memory=await this.store.load())}
-  async saveTokens(tokens){if(tokens.issuer&&tokens.issuer!==ISSUER)throw Error('untrusted_oauth_issuer');this.memory={...tokens,issuer:ISSUER};await this.store.save(this.memory)}
+  async saveTokens(tokens){if(tokens.issuer&&tokens.issuer!==ISSUER)throw Error('untrusted_oauth_issuer');const next={...tokens,issuer:ISSUER};await this.store.save(next);this.memory=next}
   state(){return this.stateValue}
   saveCodeVerifier(value){this.verifier=value}
   codeVerifier(){if(!this.verifier)throw Error('pkce_verifier_missing');return this.verifier}
   async invalidateCredentials(scope){if(scope==='all'||scope==='tokens'){this.memory=null;await this.store.clear()}if(scope==='all'||scope==='verifier')this.verifier=null}
   async redirectToAuthorization(url){if(url.origin!==ISSUER||url.pathname!=='/oauth/authorize')throw Error('untrusted_oauth_endpoint');this.authorizationUrl=url}
-  async login({openBrowser=true}={}){
+  async login({openBrowser=true,signal}={}){
+    signal?.throwIfAborted()
     // Login always represents an explicit account switch and starts a fresh authorization.
     await this.invalidateCredentials('all');this.stateValue=randomBytes(32).toString('hex')
     const server=createServer();await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)})
     this.redirect=`http://127.0.0.1:${server.address().port}/totop/callback`
-    let timer
+    let timer,abortLogin
     try{
       const completion=new Promise((resolve,reject)=>{timer=setTimeout(()=>reject(Error('authorization_timeout')),300000);timer.unref();server.on('request',(req,res)=>{
         const respond=(status,state)=>{const page=callbackPage({state,language:callbackLocale(req.headers['accept-language'])});res.writeHead(status,page.headers).end(page.html)}
@@ -32,14 +33,17 @@ export class BridgeAuth {
         if(url.searchParams.has('iss')&&(url.searchParams.getAll('iss').length!==1||url.searchParams.get('iss')!==ISSUER)){respond(400,'error');return}
         const code=url.searchParams.get('code');if(!code||url.searchParams.getAll('code').length!==1||url.searchParams.has('error')){respond(400,'error');clearTimeout(timer);reject(Error('authorization_declined'));return}
         clearTimeout(timer);respond(200,'received');resolve(code)
-      })});completion.catch(()=>{})
+      });abortLogin=()=>reject(Error('authorization_cancelled'));signal?.addEventListener('abort',abortLogin,{once:true});if(signal?.aborted)abortLogin()});completion.catch(()=>{})
       const result=await auth(this,{serverUrl:ENDPOINT,scope:SCOPES,fetchFn:safeFetch})
       if(result!=='REDIRECT'||!this.authorizationUrl)throw Error('authorization_start_failed')
+      signal?.throwIfAborted()
       if(openBrowser){const command=process.platform==='darwin'?'open':process.platform==='win32'?'rundll32':'xdg-open';const args=process.platform==='win32'?['url.dll,FileProtocolHandler',this.authorizationUrl.href]:[this.authorizationUrl.href];const child=spawn(command,args,{stdio:'ignore'});child.on('error',()=>{});child.unref()}
       // Authorization URL contains state but no credentials; only stderr, never protocol stdout.
       process.stderr.write(`Authorize ToTop in your browser: ${this.authorizationUrl.href}\n`)
-      if(await auth(this,{serverUrl:ENDPOINT,authorizationCode:await completion,scope:SCOPES,fetchFn:safeFetch})!=='AUTHORIZED')throw Error('authorization_failed')
-    }finally{clearTimeout(timer);server.closeAllConnections();server.close();this.verifier=null;this.authorizationUrl=null}
+      const code=await completion;signal?.throwIfAborted()
+      if(await auth(this,{serverUrl:ENDPOINT,authorizationCode:code,scope:SCOPES,fetchFn:safeFetch})!=='AUTHORIZED')throw Error('authorization_failed')
+      signal?.throwIfAborted()
+    }finally{signal?.removeEventListener('abort',abortLogin);clearTimeout(timer);server.closeAllConnections();server.close();this.verifier=null;this.authorizationUrl=null}
   }
 }
 export { safeFetch }

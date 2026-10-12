@@ -10111,8 +10111,9 @@ var init_oauth = __esm({
       }
       async saveTokens(tokens) {
         if (tokens.issuer && tokens.issuer !== ISSUER) throw Error("untrusted_oauth_issuer");
-        this.memory = { ...tokens, issuer: ISSUER };
-        await this.store.save(this.memory);
+        const next = { ...tokens, issuer: ISSUER };
+        await this.store.save(next);
+        this.memory = next;
       }
       state() {
         return this.stateValue;
@@ -10135,7 +10136,8 @@ var init_oauth = __esm({
         if (url2.origin !== ISSUER || url2.pathname !== "/oauth/authorize") throw Error("untrusted_oauth_endpoint");
         this.authorizationUrl = url2;
       }
-      async login({ openBrowser = true } = {}) {
+      async login({ openBrowser = true, signal } = {}) {
+        signal?.throwIfAborted();
         await this.invalidateCredentials("all");
         this.stateValue = randomBytes(32).toString("hex");
         const server = createServer();
@@ -10144,7 +10146,7 @@ var init_oauth = __esm({
           server.listen(0, "127.0.0.1", resolve5);
         });
         this.redirect = `http://127.0.0.1:${server.address().port}/totop/callback`;
-        let timer;
+        let timer, abortLogin;
         try {
           const completion = new Promise((resolve5, reject) => {
             timer = setTimeout(() => reject(Error("authorization_timeout")), 3e5);
@@ -10163,8 +10165,8 @@ var init_oauth = __esm({
                 respond(400, "error");
                 return;
               }
-              const code = url2.searchParams.get("code");
-              if (!code || url2.searchParams.getAll("code").length !== 1 || url2.searchParams.has("error")) {
+              const code2 = url2.searchParams.get("code");
+              if (!code2 || url2.searchParams.getAll("code").length !== 1 || url2.searchParams.has("error")) {
                 respond(400, "error");
                 clearTimeout(timer);
                 reject(Error("authorization_declined"));
@@ -10172,13 +10174,17 @@ var init_oauth = __esm({
               }
               clearTimeout(timer);
               respond(200, "received");
-              resolve5(code);
+              resolve5(code2);
             });
+            abortLogin = () => reject(Error("authorization_cancelled"));
+            signal?.addEventListener("abort", abortLogin, { once: true });
+            if (signal?.aborted) abortLogin();
           });
           completion.catch(() => {
           });
           const result2 = await auth(this, { serverUrl: ENDPOINT, scope: SCOPES, fetchFn: safeFetch });
           if (result2 !== "REDIRECT" || !this.authorizationUrl) throw Error("authorization_start_failed");
+          signal?.throwIfAborted();
           if (openBrowser) {
             const command = process.platform === "darwin" ? "open" : process.platform === "win32" ? "rundll32" : "xdg-open";
             const args = process.platform === "win32" ? ["url.dll,FileProtocolHandler", this.authorizationUrl.href] : [this.authorizationUrl.href];
@@ -10189,8 +10195,12 @@ var init_oauth = __esm({
           }
           process.stderr.write(`Authorize ToTop in your browser: ${this.authorizationUrl.href}
 `);
-          if (await auth(this, { serverUrl: ENDPOINT, authorizationCode: await completion, scope: SCOPES, fetchFn: safeFetch }) !== "AUTHORIZED") throw Error("authorization_failed");
+          const code = await completion;
+          signal?.throwIfAborted();
+          if (await auth(this, { serverUrl: ENDPOINT, authorizationCode: code, scope: SCOPES, fetchFn: safeFetch }) !== "AUTHORIZED") throw Error("authorization_failed");
+          signal?.throwIfAborted();
         } finally {
+          signal?.removeEventListener("abort", abortLogin);
           clearTimeout(timer);
           server.closeAllConnections();
           server.close();
@@ -21343,7 +21353,7 @@ async function main(argv = process.argv.slice(2)) {
     if (!options.roots.length) throw Error("allowed_game_directory_required");
     return serve({ auth: auth2, roots: options.roots, outputDirectory });
   }
-  if (command === "--version" || command === "version") return print({ helper: "0.2.2", plugins: "0.4.3" });
+  if (command === "--version" || command === "version") return print({ helper: "0.2.2", plugins: "0.4.5" });
   process.stderr.write("ToTop Agent 0.2.2 (Node 22+)\nCommands: prepare DIRECTORY --allow-root GAME_DIR [--purpose game|cover|source]; download-source GAME_ID RELEASE_ID NEW_DIRECTORY --allow-root APPROVED_PARENT; upload FILE < private-receipt.json; login; logout; status; serve --allow-root GAME_DIR. Optional: --profile NAME.\n");
 }
 

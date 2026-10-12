@@ -1,6 +1,6 @@
 {
   "name": "totop-ai",
-  "version": "0.4.3",
+  "version": "0.4.5",
   "description": "Prepare game builds and submit them to ToTop for review and automatic publication after approval.",
   "author": {
     "name": "ToTop"
