@@ -1,3 +1,3 @@
-# ToTop DeepSeek Harness Bundle 0.5.1
+# ToTop DeepSeek Harness Bundle 0.5.2
 
 Uses the launching official Harness MCP client 0.2.0-rc.2; no duplicate core services are installed. This is a prebuilt Cordis Bundle; no build/install hooks run. Replace the deliberate invalid gameDirectory in the inserted YAML with a specific approved game directory. No existing profile or auto-approval policy is replaced. Local development is the default and needs no login. Set cloud: true only when authenticated platform tools are needed, after the contained helper login --profile deepseek. Read get_local_game_sdk_docs for the development workflow. See WORKFLOW.md and https://totop.ai/mcp.md. Actual client acceptance is tracked separately from packaging tests.

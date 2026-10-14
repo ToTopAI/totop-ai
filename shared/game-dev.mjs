@@ -71,7 +71,7 @@ export async function buildHtmlGame({path,roots}){
    const input=resolve(from,entry.name),dest=resolve(to,entry.name)
    if(entry.isSymbolicLink())throw Error('linked_path_forbidden')
    if(entry.isDirectory()){await mkdir(dest);await copy(input,dest);continue}
-   if(installedSdk&&(entry.name==='INTEGRATION.md'||entry.name.endsWith('.d.ts'))){excluded.push(relative(source,input));continue}
+   if(installedSdk&&(entry.name==='INTEGRATION.md'||entry.name.endsWith('.d.ts'))){excluded.push(relative(source,input).replaceAll('\\','/'));continue}
    if(!runtimeFileSupported(entry.name))throw Error('unsupported_build_file: '+relative(source,input))
    const data=await readStable(input,200*1024*1024,undefined,true);await writeFile(dest,data,{flag:'wx'});hashes[relative(output,dest).replaceAll('\\','/')]=createHash('sha256').update(data).digest('hex')
   }

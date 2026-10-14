@@ -4,7 +4,7 @@ import { resolve } from 'node:path'
 import { createHash } from 'node:crypto'
 import {execFileSync} from 'node:child_process'
 const root=resolve(import.meta.dirname,'..'),manifest=JSON.parse(await readFile(resolve(root,'distribution.json')))
-assert.equal(manifest.version,JSON.parse(await readFile(resolve(root,'package.json'))).version);assert.equal(manifest.helperVersion,'0.3.1')
+assert.equal(manifest.version,JSON.parse(await readFile(resolve(root,'package.json'))).version);assert.equal(manifest.helperVersion,'0.3.2')
 assert.deepEqual(JSON.parse(execFileSync(process.execPath,[resolve(root,'dist/totop-agent.mjs'),'--version'],{encoding:'utf8'})),{helper:manifest.helperVersion,plugins:manifest.version})
 const expected=new Set(['.agents/plugins/marketplace.json','.claude-plugin/marketplace.json','.cursor-plugin/marketplace.json',
  ...['totop-ai','claude-code','cursor'].flatMap(dir=>[`plugins/${dir}/${dir==='totop-ai'?'.codex':dir==='claude-code'?'.claude':'.cursor'}-plugin/plugin.json`,`plugins/${dir}/${dir==='cursor'?'mcp.json':'.mcp.json'}`,`plugins/${dir}/README.md`,`plugins/${dir}/skills/submit-game/SKILL.md`,`plugins/${dir}/skills/submit-game/scripts/totop-agent.mjs`]),
