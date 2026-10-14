@@ -4,9 +4,32 @@ import {mkdtemp,mkdir,writeFile,readFile,rm,realpath,symlink} from 'node:fs/prom
 import {tmpdir} from 'node:os'
 import {resolve} from 'node:path'
 import {getLocalGameSdkDocs,planGameSdkIntegration,installGameSdk} from '../shared/game-integration.mjs'
+import {buildHtmlGame,checkGameBuild,bindGameProject} from '../shared/game-dev.mjs'
+import {prepareArtifact} from '../shared/artifacts.mjs'
 import {serve} from '../shared/bridge.mjs'
 import {Client} from '@modelcontextprotocol/sdk/client/index.js'
 import {InMemoryTransport} from '@modelcontextprotocol/sdk/inMemory.js'
+
+test('installed SDK exports can be frozen for upload while source declarations and docs stay intact',async()=>{
+ const root=await mkdtemp(resolve(await realpath(tmpdir()),'totop-sdk-export-'))
+ try{
+  const source=resolve(root,'src');await mkdir(source);await writeFile(resolve(source,'index.html'),'<script src="vendor/sdk/totop-game.global.js"></script>')
+  const installed=await installGameSdk({path:source,roots:[root],sdkDirectory:'vendor/sdk'})
+  assert.deepEqual(installed.runtimeFiles,['totop-game.global.js','totop-game.esm.js'])
+  await bindGameProject({path:root,roots:[root],gameId:'11111111-1111-4111-8111-111111111111'})
+  const built=await buildHtmlGame({path:root,roots:[root]})
+  assert.equal((await checkGameBuild({path:built.directory,roots:[root]})).staticStatus,'pass')
+  assert.ok(built.excludedDevelopmentFiles.includes('vendor/sdk/INTEGRATION.md'))
+  assert.ok(await readFile(resolve(source,'vendor/sdk/index.d.ts'),'utf8'))
+  assert.ok(await readFile(resolve(source,'vendor/sdk/INTEGRATION.md'),'utf8'))
+  const artifact=await prepareArtifact({path:built.directory,purpose:'game',roots:[root],outputDirectory:resolve(root,'artifacts')});assert.ok(artifact.bytes>0)
+  await writeFile(resolve(built.directory,'game.ts'),'export const source=1')
+  assert.equal((await checkGameBuild({path:built.directory,roots:[root]})).checks.find(c=>c.name==='runtime_files').status,'fail')
+  await writeFile(resolve(source,'unrelated.md'),'Keep developer attribution instructions in source; do not silently delete them')
+  await assert.rejects(buildHtmlGame({path:root,roots:[root]}),/unsupported_build_file: unrelated.md/)
+  assert.match(await readFile(resolve(source,'unrelated.md'),'utf8'),/Keep developer attribution/)
+ }finally{await rm(root,{recursive:true,force:true})}
+})
 
 test('existing game integration preserves gameplay, old saves, manifests and build scripts',async()=>{
  const root=await mkdtemp(resolve(await realpath(tmpdir()),'totop-existing-sdk-'))

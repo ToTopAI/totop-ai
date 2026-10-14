@@ -4,7 +4,7 @@ import { resolve, dirname } from 'node:path'
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { zipSync } from 'fflate'
-const root=resolve(import.meta.dirname,'..'),version=JSON.parse(await readFile(resolve(root,'package.json'))).version,helperVersion='0.3.0'
+const root=resolve(import.meta.dirname,'..'),version=JSON.parse(await readFile(resolve(root,'package.json'))).version,helperVersion='0.3.1'
 const json=async(path,value)=>{await mkdir(dirname(resolve(root,path)),{recursive:true});await writeFile(resolve(root,path),JSON.stringify(value,null,2)+'\n')}
 const source=await readFile(resolve(root,'shared/submit-game.md'),'utf8'),description='Develop HTML5 and WebGL games with the ToTop SDK, preview locally, and submit releases to ToTop using MCP.'
 await mkdir(resolve(root,'dist'),{recursive:true})

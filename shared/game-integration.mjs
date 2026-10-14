@@ -86,5 +86,5 @@ export async function installGameSdk({path,roots,sdkDirectory}) {
  try{await unlinkedPath(manifestPath)}catch(error){if(error.code!=='ENOENT')throw error}
  let manifestStatus='preserved'
  try{await writeFile(manifestPath,JSON.stringify({schemaVersion:1,sdkVersion:'1.0.0',engine:project.engine,orientation:'any',locales:['en'],saveSchemaVersion:1,capabilities:['cloudSave','config','analytics']},null,2)+'\n',{flag:'wx'});manifestStatus='created'}catch(error){if(error.code!=='EEXIST')throw error}
- return {status:'assets_installed',engine:project.engine,sdkVersion:'1.0.0',directory:destination,files,manifest:manifestPath,manifestStatus,integrationStatus:'requires_game_hooks',gameplayStatus:'not_run',next:'Use the integration plan to wire actual game hooks; installing files is not acceptance.'}
+ return {status:'assets_installed',engine:project.engine,sdkVersion:'1.0.0',directory:destination,files,...(project.engine==='html5'?{runtimeFiles:['totop-game.global.js','totop-game.esm.js'],developmentFiles:files.filter(file=>file.endsWith('.d.ts')||file==='INTEGRATION.md')}:{}),manifest:manifestPath,manifestStatus,integrationStatus:'requires_game_hooks',gameplayStatus:'not_run',next:'Wire actual game hooks. Export runtime files only; keep SDK declarations and INTEGRATION.md in the source project. Installing files is not acceptance.'}
 }

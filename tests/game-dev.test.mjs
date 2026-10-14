@@ -37,9 +37,13 @@ test('local MCP development does not connect OAuth or expose cloud writes',async
   await client.connect(clientTransport)
   const names=(await client.listTools()).tools.map(tool=>tool.name)
   assert.ok(names.includes('create_game_project'));assert.ok(names.includes('start_game_preview'))
+  assert.ok(names.includes('prepare_local_artifact'))
   assert.equal(names.includes('upload_local_artifact'),false);assert.equal(names.includes('download_game_source'),false)
   const result=await client.callTool({name:'create_game_project',arguments:{destination:resolve(parent,'game'),engine:'html5'}})
   assert.equal(JSON.parse(result.content[0].text).publicationStatus,'not_submitted')
+  const built=await client.callTool({name:'build_html_game',arguments:{path:resolve(parent,'game')}})
+  const prepared=JSON.parse((await client.callTool({name:'prepare_local_artifact',arguments:{path:JSON.parse(built.content[0].text).directory,purpose:'game'}})).content[0].text)
+  assert.ok(prepared.bytes>0);assert.equal(prepared.uploadable,false);assert.equal(prepared.preparationContext,'local_only');assert.equal(prepared.path,undefined)
   await assert.rejects(client.callTool({name:'submit_game',arguments:{}}),/login_required/)
  }finally{await client.close();await bridge.close();await rm(parent,{recursive:true,force:true})}
 })

@@ -11,6 +11,7 @@ export const ZIP_LIMIT=100*1024*1024, COVER_LIMIT=10*1024*1024
 export const GAME_ZIP_LIMIT=200*1024*1024, GAME_FILE_LIMIT=20000
 const forbidden=new Set(['.git','.hg','.svn','node_modules','.ssh','.aws','.npmrc','.pypirc','credentials','id_rsa','id_ed25519'])
 const allowed=new Set('.html .htm .js .mjs .css .json .wasm .data .bin .unityweb .pck .gz .br .png .jpg .jpeg .webp .gif .svg .ico .avif .ktx .ktx2 .basis .mp3 .ogg .wav .m4a .mp4 .webm .woff .woff2 .ttf .otf .glb .gltf .obj .mtl .txt .xml'.split(' '))
+export const runtimeFileSupported=name=>allowed.has(extname(name).toLowerCase())
 const secret=/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|(?:AKIA|ASIA)[A-Z0-9]{16}|\bsk-[A-Za-z0-9_-]{32,}/
 const inside=(root,path)=>{const rel=relative(root,path);return rel===''||!rel.startsWith('..'+(process.platform==='win32'?'\\':'/'))&&rel!=='..'&&!isAbsolute(rel)}
 const same=(a,b)=>a.dev===b.dev&&a.ino===b.ino&&a.size===b.size&&a.mtimeMs===b.mtimeMs&&a.ctimeMs===b.ctimeMs
@@ -57,7 +58,7 @@ async function inventory(root) {
     if(info.isSymbolicLink()||!inside(root,path))throw Error('linked_path_forbidden')
     if(name.split('/').some(x=>forbidden.has(x.toLowerCase())||x.toLowerCase().startsWith('.env'))||/[\x00-\x1f\x7f\\]/.test(item))throw Error('sensitive_or_unsafe_build_file')
     if(info.isDirectory()){await walk(path);continue}
-    if(!info.isFile()||!allowed.has(extname(path).toLowerCase()))throw Error('unsupported_build_file')
+    if(!info.isFile()||!runtimeFileSupported(path))throw Error('unsupported_build_file')
     total+=info.size;if(info.size>GAME_ZIP_LIMIT||total>500*1024*1024||files.length>=GAME_FILE_LIMIT)throw Error('build_limit_exceeded')
     files.push({path,name,info})
   }}await walk(root);return files

@@ -6,7 +6,7 @@ import {agentFirstCopy} from '../shared/agent-first-copy.mjs'
 import {surfaceCopy} from '../shared/surface-copy.mjs'
 import {cursorInstallCopy} from '../shared/cursor-install-copy.mjs'
 
-test('Cursor personal Git marketplace is the default in all 14 locales',()=>{
+test('Cursor personal Git marketplace is the default in all 14 locales',async()=>{
  assert.equal(Object.keys(cursorInstallCopy).length,14)
  assert.equal(clientGuides.cursor.install,cursorInstallCopy.en.install)
  for(const copy of Object.values(cursorInstallCopy)){
@@ -17,7 +17,8 @@ test('Cursor personal Git marketplace is the default in all 14 locales',()=>{
   assert.ok(copy.fallback.includes('~/.cursor/plugins/local/totop-ai'))
   for(const value of Object.values(copy))assert.ok(value.trim())
  }
- assert.ok(clientGuides.cursor.download.includes('v0.5.0'))
+ const version=JSON.parse(await readFile(new URL('../package.json',import.meta.url),'utf8')).version
+ for(const client of Object.values(clientGuides))if(client.download)assert.ok(client.download.includes('/v'+version+'/'))
 })
 
 test('Agent-first copy covers all 14 locales and five runtime entries',()=>{

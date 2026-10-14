@@ -106,3 +106,5 @@ For cloud preview, read the preview page. After an owned, SDK-bound upload compl
 ## Report
 
 Return what is playable, the preview/build output, actual QA results, and remaining blockers. Distinguish static checks, engine builds, real gameplay, SDK integration and production publication. Never print tokens, signed URLs or private receipts. Never automatically submit on init/build/dev/check.
+
+Before cloud upload, inspect runtimeFiles/developmentFiles from SDK installation. Keep *.d.ts and INTEGRATION.md in source; export only runtime JS and game resources through the existing pipeline. check_game_build must pass runtime_files, then prepare_local_artifact must produce a real ZIP. Preserve existing attribution as supported runtime text, and never claim cloud acceptance from a browser-only export.

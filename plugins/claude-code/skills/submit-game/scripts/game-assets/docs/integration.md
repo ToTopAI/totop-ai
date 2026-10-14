@@ -76,3 +76,9 @@ The storage API is always available after initialization for local guest progres
 For each Agent client, test both new and existing games. Record actual tool discovery and invocation, fixed SDK version, code changes, preservation of gameplay/save data, real input, lifecycle, guest save reload, account switch, overlapping pause/mute, config/custom events and capability fallbacks. Rewarded cancellation/unfilled never grants rewards. Disabled leaderboard or production payment services must be reported as disabled. Local mock account/cloud results are separate from real platform OAuth/cloud evidence.
 
 An absent editor, browser, account or device produces `not_run`/`blocked`, not `pass`. Deployment requires the backend and game host; direct game HTML has no platform host. Submission uses the existing account/version-bound authorization workflow.
+
+## HTML5 运行资产导出
+
+已有项目的 SDK 安装结果包含 runtimeFiles 与 developmentFiles。类型声明（*.d.ts）和 INTEGRATION.md 保留在源项目，运行导出只复制 SDK 的 JavaScript，以及游戏实际使用的静态资源和根清单。继续使用项目原有工具链，并调整 SDK 子目录的复制规则；不要把接入文档或源码当作运行资产。已有署名、授权说明等运行材料继续保留为平台支持的文本资产。
+
+build_html_game 会识别当前固定版本 SDK，排除其声明和接入文档，并返回 excludedDevelopmentFiles；它不会静默删除其他开发文件。check_game_build 的 runtime_files 检查应通过，再执行 prepare_local_artifact 的冻结打包检查。静态导出和打包均不能替代浏览器试玩。

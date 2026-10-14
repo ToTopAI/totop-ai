@@ -7,7 +7,7 @@
     {
       "name": "totop-ai",
       "source": "./plugins/claude-code",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "description": "Develop HTML5 and WebGL games with the ToTop SDK, preview locally, and submit releases to ToTop using MCP."
     }
   ]

@@ -18,7 +18,7 @@ async function collect(directory,prefix='game-assets/'){
  }
 }
 await collect(resolve(root,'shared/game-assets'))
-files['manifest.json']=JSON.stringify({schema:1,pluginVersion:desktop.version,helperVersion:'0.3.0',sdkVersion:pkg.dependencies['@modelcontextprotocol/sdk'],sha256:createHash('sha256').update(agent).digest('hex'),assets},null,2)+'\n'
+files['manifest.json']=JSON.stringify({schema:1,pluginVersion:desktop.version,helperVersion:'0.3.1',sdkVersion:pkg.dependencies['@modelcontextprotocol/sdk'],sha256:createHash('sha256').update(agent).digest('hex'),assets},null,2)+'\n'
 files['package.json']=JSON.stringify({name:'totop-ai-desktop',version:desktop.version,type:'module',main:'./plugin.mjs',exports:{'.':'./plugin.mjs','./client':'./client.js','./package.json':'./package.json'},dsh:{client:{platform:'web',inject:['@deepseek-ai/dsh-client-ui-plugin-manager'],external:['react']}}},null,2)+'\n'
 const name=`totop-ai-desktop-${desktop.version}.json`
 await writeFile(resolve(root,'dist',name),JSON.stringify({schema:1,protocol:2,version:desktop.version,files})+'\n')

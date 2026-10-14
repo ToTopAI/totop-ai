@@ -2,7 +2,7 @@ import {mkdir,readFile,readdir,writeFile,lstat,copyFile,rename,rm} from 'node:fs
 import {resolve,dirname,relative,isAbsolute,extname} from 'node:path'
 import {createHash,randomUUID} from 'node:crypto'
 import {createServer} from 'node:http'
-import {permittedPath,unlinkedPath,readStable} from './artifacts.mjs'
+import {permittedPath,unlinkedPath,readStable,runtimeFileSupported} from './artifacts.mjs'
 import {validateGameManifest} from './game-manifest.mjs'
 const assets=new URL('./game-assets/',import.meta.url)
 const sdkVersion='1.0.0'
@@ -55,14 +55,29 @@ export async function checkGameBuild({path,roots}){
  try{const value=JSON.parse((await readStable(resolve(root,'totop.game.json'),32768)).toString()),valid=validateGameManifest(value);check('sdk_manifest',valid.valid,valid.valid?'Pinned SDK manifest matches the full schema':valid.errorMessage);check('platform_binding',typeof value.gameId==='string'&&/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value.gameId),'Binding required before publication; local prototype can omit it')}catch{check('sdk_manifest',false,'Missing/invalid totop.game.json')}
  const files=[];async function walk(dir){for(const entry of await readdir(dir,{withFileTypes:true})){const file=resolve(dir,entry.name);if(entry.isSymbolicLink())throw Error('linked_path_forbidden');if(entry.isDirectory())await walk(file);else if(entry.isFile())files.push({name:relative(root,file).replaceAll('\\','/'),bytes:(await lstat(file)).size})}}await walk(root)
  const bytes=files.reduce((total,file)=>total+file.bytes,0);check('unpacked_limit',bytes<=524288000&&files.length<=20000,'Current runtime maximum 500 MiB / 20,000 files; recheck server before upload')
+ const unsupported=files.filter(file=>!runtimeFileSupported(file.name)).map(file=>file.name)
+ check('runtime_files',unsupported.length===0,unsupported.length?'Export only runtime files; unsupported: '+unsupported.slice(0,20).join(', '):'Export contains supported runtime assets')
  return{root,sdkVersion,checks,files:files.length,unpackedBytes:bytes,staticStatus:checks.every(check=>check.status==='pass')?'pass':'fail',buildStatus:'not_run',gameplayStatus:'not_run',next:'Run actual browser/engine QA; static checks do not prove gameplay'}
 }
 export async function buildHtmlGame({path,roots}){
  const project=await inspectGameProject({path,roots});if(project.engine!=='html5')throw Error('engine_export_required')
  const source=await permittedPath(resolve(project.root,'src'),roots),outParent=resolve(project.root,'.totop/builds');await mkdir(outParent,{recursive:true});await unlinkedPath(outParent)
  const output=resolve(outParent,randomUUID());await mkdir(output)
- const hashes={};async function copy(from,to){for(const entry of await readdir(from,{withFileTypes:true})){const input=resolve(from,entry.name),dest=resolve(to,entry.name);if(entry.isSymbolicLink())throw Error('linked_path_forbidden');if(entry.isDirectory()){await mkdir(dest);await copy(input,dest)}else{const data=await readStable(input,200*1024*1024,undefined,true);await writeFile(dest,data,{flag:'wx'});hashes[relative(output,dest).replaceAll('\\','/')]=createHash('sha256').update(data).digest('hex')}}}await copy(source,output)
- return{directory:output,engine:'html5',sdkVersion,buildStatus:'pass',gameplayStatus:'not_run',files:hashes}
+ const sdkHash=createHash('sha256').update(await readFile(new URL('totop-game.global.js',assets))).digest('hex'),hashes={},excluded=[]
+ async function copy(from,to){
+  let installedSdk=false
+  try{installedSdk=createHash('sha256').update(await readStable(resolve(from,'totop-game.global.js'),200*1024*1024)).digest('hex')===sdkHash}catch(error){if(error.code!=='ENOENT')throw error}
+  for(const entry of await readdir(from,{withFileTypes:true})){
+   const input=resolve(from,entry.name),dest=resolve(to,entry.name)
+   if(entry.isSymbolicLink())throw Error('linked_path_forbidden')
+   if(entry.isDirectory()){await mkdir(dest);await copy(input,dest);continue}
+   if(installedSdk&&(entry.name==='INTEGRATION.md'||entry.name.endsWith('.d.ts'))){excluded.push(relative(source,input));continue}
+   if(!runtimeFileSupported(entry.name))throw Error('unsupported_build_file: '+relative(source,input))
+   const data=await readStable(input,200*1024*1024,undefined,true);await writeFile(dest,data,{flag:'wx'});hashes[relative(output,dest).replaceAll('\\','/')]=createHash('sha256').update(data).digest('hex')
+  }
+ }
+ try{await copy(source,output)}catch(error){await rm(output,{recursive:true,force:true});throw error}
+ return{directory:output,engine:'html5',sdkVersion,buildStatus:'pass',gameplayStatus:'not_run',files:hashes,excludedDevelopmentFiles:excluded}
 }
 export async function bindGameProject({path,roots,gameId}){
  if(typeof gameId!=='string'||!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(gameId))throw Error('invalid_game_binding')
