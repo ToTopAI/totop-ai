@@ -1,8 +1,14 @@
 # ToTop MCP — Agent execution guide
 
-This document is for an Agent connecting to ToTop and submitting a user's local game. Start by inspecting your actual tools, OAuth state and authorized local-file capabilities. Use generic MCP configuration unless a native plugin is already available; do not assume a particular client or install duplicate connections.
+This document is for an Agent developing a game, integrating the ToTop Game SDK, and connecting an authorized game to ToTop. Start by inspecting your actual tools, OAuth state and authorized local-file capabilities. Use generic MCP configuration unless a native plugin is already available; do not assume a particular client or install duplicate connections.
 
 ## Start here
+
+### Develop and integrate the game SDK
+
+Use the bundled develop-game skill for new HTML5, Unity WebGL or Godot Web games and for integrating existing games. Local development needs no platform login. Read fixed offline SDK docs with `sdk-docs integration` and `sdk-docs capabilities`, then inspect/plan/integrate an existing project or init a new one. Wire actual lifecycle, player/save, pause/audio, public config and custom events. Preserve the existing gameplay, save keys and build pipeline. Export, preview through the SDK host, and test a real round. Static checks and asset installation do not prove integration.
+
+The helper offers `serve-local --allow-root /absolute/project` with get_local_game_sdk_docs, create_game_project, inspect_game_project, plan_game_sdk_integration, install_game_sdk, bind_game_project, build_html_game, check_game_build and start/stop_game_preview. Resolve the self-contained helper from the loaded plugin skill or extract the whole standalone ZIP, including game-assets. Use existing native OAuth only when platform tools are needed. Production service states are explicit; mock ads/payments never imply real revenue or fulfillment.
 
 ### Open-source games and safe remixing
 
@@ -10,7 +16,7 @@ The reserved Open source category is derived from the current approved/deployed 
 
 Only administrators may upload source for games they own. Source requires a new release, explicit MIT rights confirmation (including remixable materials and third-party attribution), root LICENSE and README.md with build/run instructions. Limits: ZIP 100 MiB, unpacked 500 MiB, 5,000 files. The platform rejects secrets, links, traversal, encrypted/corrupt packages, nested archives, installers, VCS and dependencies. It never executes or deploys source files as runtime assets. An uncertain license/security review goes to human review, never silently removing source to publish.
 
-With helper 0.2.2, `prepare /approved/project --purpose source --allow-root /approved/project` makes a clean archive and lists exclusions. Inspect exclusions before upload. Use the actual start_upload object schema: purpose source, gameId, expectedVersion, sha256, bytes and buildInstructions. Complete separately; submit_game additionally requires sourceUploadId and confirmOpenSourceMIT:true. Existing un-managed owner games can explicitly adopt a reviewed draft with adopt_game_draft and complete metadata/external-service declarations. No-source release workflows stay compatible.
+With helper 0.3.0, `prepare /approved/project --purpose source --allow-root /approved/project` makes a clean archive and lists exclusions. Inspect exclusions before upload. Use the actual start_upload object schema: purpose source, gameId, expectedVersion, sha256, bytes and buildInstructions. Complete separately; submit_game additionally requires sourceUploadId and confirmOpenSourceMIT:true. Existing un-managed owner games can explicitly adopt a reviewed draft with adopt_game_draft and complete metadata/external-service declarations. No-source release workflows stay compatible.
 
 Runtime game packages support ZIPs up to 200 MiB, 500 MiB unpacked and 20,000 files. Source packages retain the stricter 100 MiB / 5,000-file limits; covers remain 10 MiB. Always check the server's current submission requirements before preparing or uploading.
 
@@ -25,11 +31,13 @@ For the same instructions in the platform's supported languages, open https://cr
 
 Canonical setup: https://creator.totop.ai/agents. Legacy /codex bookmarks redirect safely to /agents. Endpoint: https://api.totop.ai/mcp (Streamable HTTP). Browser OAuth issuer: https://auth.totop.ai. No API key or client secret is required.
 
-Plugins **0.4.3** and shared Node helper/bridge **0.2.2**. Requires Node 22+. New installations do not require Python. Download fixed-version packages and SHA256SUMS from https://github.com/ToTopAI/totop-ai/releases/tag/v0.4.3. Official marketplace listing is a separate process, not a prerequisite. Do not silently overwrite existing plugins, MCP entries, profiles or approval settings. Detect duplicate plugin/manual entries and let the user choose which to keep. No auto-submit hooks are installed.
+Plugins **0.5.0** and shared Node helper/bridge **0.3.0**. Requires Node 22+. New installations do not require Python. Download fixed-version packages and SHA256SUMS from https://github.com/ToTopAI/totop-ai/releases/tag/v0.5.0. Official marketplace listing is a separate process, not a prerequisite. Do not silently overwrite existing plugins, MCP entries, profiles or approval settings. Detect duplicate plugin/manual entries and let the user choose which to keep. No auto-submit hooks are installed.
 
-DeepSeek Harness acceptance target remains official `@deepseek-ai/dsh` **0.2.0-rc.2**, with `@deepseek-ai/dsh-mcp-client` **0.0.1-rc.1**. The ToTop helper version does not change this client target. Installing the bundle requires registry access for its pinned client dependency, but runs no ToTop build/install hooks. The bundle does not replace your profile.
+DeepSeek Harness acceptance target remains official `@deepseek-ai/dsh` **0.2.0-rc.2**, with `@deepseek-ai/dsh-mcp-client` **0.2.0-rc.2**. The ToTop helper version does not change this client target. The bundle uses the launching Harness MCP client so it does not install duplicate core services. No ToTop build/install hooks run. The bundle does not replace your profile.
 
 ## Agent runtime configuration
+
+Managed games receive a stable `<slug>.games.totop.ai` runtime origin at creation. Always use the server launch contract; never derive or copy a shared runtime URL. Public results and sharing must continue to use the official `totop.ai/games/<slug>` detail link. Runtime origins do not imply review or deployment success, and changing a title does not change the slug or origin.
 
 ### MCP
 
@@ -115,18 +123,18 @@ Local upload: Use authorized local tools and the contained helper (${CURSOR_PLUG
 
 ### DeepSeek Harness
 
-Run node /absolute/totop-agent.mjs login --profile deepseek first. Bundle inserts only its own entry; replace the invalid gameDirectory with an explicitly approved directory. Official MCP client pinned to 0.0.1-rc.1.
+Local game development needs no platform login. Set cloud: true and run helper login --profile deepseek only for cloud tools. Bundle inserts only its own entry; replace the invalid gameDirectory with an explicitly approved directory. Official MCP client pinned to 0.2.0-rc.2.
 
 Native plugin:
 
 ```text
-dsh plugin --profile YOUR_PROFILE add ./totop-ai-0.4.3.tgz --save-prod --ignore-scripts
+dsh plugin --profile YOUR_PROFILE add ./totop-ai-0.5.0.tgz --save-prod --ignore-scripts
 ```
 
 Explicit local setup:
 
 ```text
-node /absolute/totop-agent.mjs login --profile deepseek
+# Local SDK development needs no login. For cloud tools: helper login --profile deepseek; set cloud: true.
 
 # Merge into YOUR_PROFILE/cordis.patch.yml; do not replace existing entries.
 # Use an explicitly approved game directory (Windows example: C:/Games/my-game).
@@ -153,7 +161,7 @@ Local upload: The restricted bridge adds prepare_local_artifact and upload_local
 
 ## Local helper and stdio fallback
 
-Download totop-agent-0.2.2.zip from the fixed Release, verify its SHA-256 and extract it to a retained directory. Replace absolute paths below with real paths to an explicitly approved game directory. Windows paths are supported; JSON backslashes must be escaped.
+Download totop-agent-0.3.0.zip from the fixed Release, verify its SHA-256 and extract it to a retained directory. Replace absolute paths below with real paths to an explicitly approved game directory. Windows paths are supported; JSON backslashes must be escaped.
 
 ```sh
 node /absolute/totop-agent.mjs prepare /absolute/game/dist --allow-root /absolute/game --purpose game

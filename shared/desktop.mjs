@@ -3,6 +3,8 @@ export { BridgeAuth } from './oauth.mjs'
 export { connectRemote } from './bridge.mjs'
 export { prepareArtifact, uploadArtifact, validateReceipt, permittedPath, readStable } from './artifacts.mjs'
 export { downloadGameSource } from './source.mjs'
+export {createGameProject,inspectGameProject,checkGameBuild,buildHtmlGame,startGamePreview,bindGameProject} from './game-dev.mjs'
+export {getLocalGameSdkDocs,planGameSdkIntegration,installGameSdk} from './game-integration.mjs'
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'

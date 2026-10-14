@@ -1,6 +1,6 @@
-# totop-ai 0.4.5
+# totop-ai 0.5.0
 
-Submit local HTML5 and WebGL games to ToTop using MCP and browser OAuth.
+Develop HTML5 and WebGL games with the ToTop SDK, preview locally, and submit releases to ToTop using MCP.
 
 See https://totop.ai/mcp.md for installation, duplicate-config detection, authentication and submission instructions. Requires Node 22+, not Python. No hooks or auto-approval settings are installed. This package includes its own helper and shared workflow.
 

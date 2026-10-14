@@ -1,7 +1,7 @@
 {
   "name": "totop-ai",
-  "version": "0.4.5",
-  "description": "Submit local HTML5 and WebGL games to ToTop using MCP and browser OAuth.",
+  "version": "0.5.0",
+  "description": "Develop HTML5 and WebGL games with the ToTop SDK, preview locally, and submit releases to ToTop using MCP.",
   "author": {
     "name": "ToTop"
   },

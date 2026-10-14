@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.totop.ai/sdk/game/v1.0.0/totop.game.schema.json",
+  "title": "ToTop Game SDK manifest v1", "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "sdkVersion", "engine", "orientation", "locales"],
+  "properties": {
+    "schemaVersion": { "const": 1 }, "sdkVersion": { "const": "1.0.0" },
+    "gameId": { "type": "string", "format": "uuid" },
+    "engine": { "enum": ["html5", "unity", "godot"] },
+    "orientation": { "enum": ["any", "portrait", "landscape"] },
+    "locales": { "type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true, "items": { "type": "string", "minLength": 2, "maxLength": 35 } },
+    "saveSchemaVersion": { "type": "integer", "minimum": 1 },
+    "capabilities": { "type": "array", "uniqueItems": true, "items": { "enum": ["lifecycle", "device", "player", "cloudSave", "config", "analytics", "interstitial", "rewarded", "banner", "payments", "leaderboards", "achievements", "tasks", "dailyRewards", "social", "notifications", "crossPromo", "clipboard"] } }
+  }
+}

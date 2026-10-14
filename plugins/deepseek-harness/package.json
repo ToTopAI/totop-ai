@@ -1,6 +1,6 @@
 {
   "name": "totop-ai",
-  "version": "0.4.5",
+  "version": "0.5.0",
   "type": "module",
   "main": "./index.mjs",
   "exports": {
@@ -14,12 +14,18 @@
       "patch": "./cordis.patch.yml"
     }
   },
-  "dependencies": {
-    "@deepseek-ai/dsh-mcp-client": "0.0.1-rc.1"
+  "peerDependencies": {
+    "@deepseek-ai/dsh-mcp-client": "0.2.0-rc.2"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-mcp-client": {
+      "optional": true
+    }
   },
   "files": [
     "index.mjs",
     "totop-agent.mjs",
+    "game-assets",
     "cordis.patch.yml",
     "WORKFLOW.md",
     "README.md"

@@ -3,13 +3,19 @@ import { readFile, lstat, readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { createHash } from 'node:crypto'
 const root=resolve(import.meta.dirname,'..'),manifest=JSON.parse(await readFile(resolve(root,'distribution.json')))
-assert.equal(manifest.version,JSON.parse(await readFile(resolve(root,'package.json'))).version);assert.equal(manifest.helperVersion,'0.2.2')
+assert.equal(manifest.version,JSON.parse(await readFile(resolve(root,'package.json'))).version);assert.equal(manifest.helperVersion,'0.3.0')
 const expected=new Set(['.agents/plugins/marketplace.json','.claude-plugin/marketplace.json','.cursor-plugin/marketplace.json',
  ...['totop-ai','claude-code','cursor'].flatMap(dir=>[`plugins/${dir}/${dir==='totop-ai'?'.codex':dir==='claude-code'?'.claude':'.cursor'}-plugin/plugin.json`,`plugins/${dir}/${dir==='cursor'?'mcp.json':'.mcp.json'}`,`plugins/${dir}/README.md`,`plugins/${dir}/skills/submit-game/SKILL.md`,`plugins/${dir}/skills/submit-game/scripts/totop-agent.mjs`]),
  ...['package_game.py','upload_game.py'].map(name=>'plugins/totop-ai/skills/submit-game/scripts/'+name),
  ...['package.json','index.mjs','totop-agent.mjs','cordis.patch.yml','WORKFLOW.md','README.md'].map(name=>'plugins/deepseek-harness/'+name)])
-assert.deepEqual(new Set(Object.keys(manifest.files)),expected,'Unexpected distribution inputs')
 async function walk(directory){const paths=[];for(const entry of await readdir(resolve(root,directory),{withFileTypes:true})){assert.equal(entry.isSymbolicLink(),false);const path=directory+'/'+entry.name;paths.push(...entry.isDirectory()?await walk(path):[path])}return paths}
+const assets=await walk('shared/game-assets')
+for(const directory of ['totop-ai','claude-code','cursor']){
+ expected.add(`plugins/${directory}/skills/develop-game/SKILL.md`)
+ for(const asset of assets)expected.add(`plugins/${directory}/skills/submit-game/scripts/game-assets/${asset.slice('shared/game-assets/'.length)}`)
+}
+for(const asset of assets)expected.add(`plugins/deepseek-harness/game-assets/${asset.slice('shared/game-assets/'.length)}`)
+assert.deepEqual(new Set(Object.keys(manifest.files)),expected,'Unexpected distribution inputs')
 const actual=(await Promise.all(['plugins','.agents','.claude-plugin','.cursor-plugin'].map(walk))).flat()
 assert.deepEqual(new Set(actual),expected,'Unexpected plugin files/hooks')
 for(const [name,hash]of Object.entries(manifest.files)){

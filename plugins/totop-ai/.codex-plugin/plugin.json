@@ -1,15 +1,15 @@
 {
   "name": "totop-ai",
-  "version": "0.4.5",
-  "description": "Prepare game builds and submit them to ToTop for review and automatic publication after approval.",
+  "version": "0.5.0",
+  "description": "Develop HTML5 and WebGL games with the ToTop SDK, preview locally, and submit releases to ToTop using MCP.",
   "author": {
     "name": "ToTop"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "totop-ai",
-    "shortDescription": "Submit games to ToTop",
-    "longDescription": "Prepare and upload a game build, submit an immutable version for platform review, and read publication results. Requires an enabled ToTop developer connection.",
+    "shortDescription": "Develop and submit games to ToTop",
+    "longDescription": "Create HTML5, Unity WebGL or Godot Web projects, integrate the ToTop Game SDK, preview and test locally, and submit immutable game releases for review. Local development does not require platform login; cloud submission requires an enabled developer connection.",
     "developerName": "ToTop",
     "category": "Productivity",
     "capabilities": [],

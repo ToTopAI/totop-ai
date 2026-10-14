@@ -1,0 +1,12 @@
+config_version=5
+[application]
+config/name="ToTop SDK Example"
+run/main_scene="res://example.tscn"
+[autoload]
+ToTop="*res://addons/totop/totop.gd"
+[rendering]
+renderer/rendering_method="gl_compatibility"
+[display]
+window/size/viewport_width=960
+window/size/viewport_height=640
+window/stretch/mode="canvas_items"

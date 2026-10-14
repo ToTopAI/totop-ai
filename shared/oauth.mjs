@@ -39,7 +39,7 @@ export class BridgeAuth {
       signal?.throwIfAborted()
       if(openBrowser){const command=process.platform==='darwin'?'open':process.platform==='win32'?'rundll32':'xdg-open';const args=process.platform==='win32'?['url.dll,FileProtocolHandler',this.authorizationUrl.href]:[this.authorizationUrl.href];const child=spawn(command,args,{stdio:'ignore'});child.on('error',()=>{});child.unref()}
       // Authorization URL contains state but no credentials; only stderr, never protocol stdout.
-      process.stderr.write(`Authorize ToTop in your browser: ${this.authorizationUrl.href}\n`)
+      process.stderr.write(openBrowser?'Complete ToTop authorization in your browser.\n':`Authorize ToTop in your browser: ${this.authorizationUrl.href}\n`)
       const code=await completion;signal?.throwIfAborted()
       if(await auth(this,{serverUrl:ENDPOINT,authorizationCode:code,scope:SCOPES,fetchFn:safeFetch})!=='AUTHORIZED')throw Error('authorization_failed')
       signal?.throwIfAborted()

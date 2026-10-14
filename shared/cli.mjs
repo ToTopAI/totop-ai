@@ -6,6 +6,8 @@ import { CredentialStore } from './credentials.mjs'
 import { BridgeAuth, ISSUER } from './oauth.mjs'
 import { connectRemote, serve } from './bridge.mjs'
 import {downloadGameSource} from './source.mjs'
+import {createGameProject,inspectGameProject,checkGameBuild,buildHtmlGame,startGamePreview,bindGameProject} from './game-dev.mjs'
+import {getLocalGameSdkDocs,planGameSdkIntegration,installGameSdk} from './game-integration.mjs'
 
 export async function main(argv=process.argv.slice(2)) {
   if(Number(process.versions.node.split('.')[0])<22)throw Error('node_22_required')
@@ -16,6 +18,7 @@ export async function main(argv=process.argv.slice(2)) {
     else if(item==='--profile'){options.profile=argv[++i]}
     else if(item==='--purpose'){options.purpose=argv[++i]}
     else if(item==='--no-open'){options.noOpen=true}
+    else if(['--engine','--title','--port','--sdk-directory'].includes(item)){if(!argv[i+1])throw Error('missing_option_value');options[item==='--sdk-directory'?'sdkDirectory':item.slice(2)]=argv[++i]}
     else if(item.startsWith('--'))throw Error('unknown_option')
     else positional.push(item)
   }
@@ -24,6 +27,19 @@ export async function main(argv=process.argv.slice(2)) {
   const outputDirectory=resolve(directory,'artifacts',options.profile)
   const clearArtifacts=async()=>{try{await unlinkedPath(outputDirectory);await rm(outputDirectory,{recursive:true,force:true})}catch(error){if(error.code!=='ENOENT')throw error}}
   const print=value=>process.stdout.write(JSON.stringify(value)+'\n')
+  if(command==='sdk-docs')return print(await getLocalGameSdkDocs({page:positional[0],engine:options.engine}))
+  if(command==='plan')return print(await planGameSdkIntegration({path:positional[0],roots:options.roots}))
+  if(command==='integrate')return print(await installGameSdk({path:positional[0],roots:options.roots,sdkDirectory:options.sdkDirectory}))
+  if(command==='init')return print(await createGameProject({destination:positional[0],roots:options.roots,engine:options.engine,title:options.title}))
+  if(command==='inspect')return print(await inspectGameProject({path:positional[0],roots:options.roots}))
+  if(command==='bind')return print(await bindGameProject({path:positional[0],gameId:positional[1],roots:options.roots}))
+  if(command==='check')return print(await checkGameBuild({path:positional[0],roots:options.roots}))
+  if(command==='build')return print(await buildHtmlGame({path:positional[0],roots:options.roots}))
+  if(command==='dev'){
+    const preview=await startGamePreview({path:positional[0],roots:options.roots,port:options.port===undefined?0:Number(options.port)})
+    print({status:'running',url:preview.url,environment:'local',sdkVersion:'1.0.0'})
+    process.once('SIGINT',()=>void preview.close());process.once('SIGTERM',()=>void preview.close());return
+  }
   if(command==='prepare')return print(await prepareArtifact({path:positional[0],purpose:options.purpose??'game',roots:options.roots,outputDirectory}))
   if(command==='download-source'){
     const remote=await connectRemote(auth)
@@ -49,7 +65,7 @@ export async function main(argv=process.argv.slice(2)) {
     if(!await auth.tokens())return print({status:'signed_out',profile:options.profile})
     const client=await connectRemote(auth);try{const response=await client.callTool({name:'get_account',arguments:{}});if(response.isError)throw Error('account_unavailable');const data=JSON.parse(response.content.find(x=>x.type==='text').text);print({status:'connected',profile:options.profile,accountId:data.accountId,creatorReady:data.creatorReady})}finally{await client.close()}return
   }
-  if(command==='serve'){if(!options.roots.length)throw Error('allowed_game_directory_required');return serve({auth,roots:options.roots,outputDirectory})}
-  if(command==='--version'||command==='version')return print({helper:'0.2.2',plugins:'0.4.5'})
-  process.stderr.write('ToTop Agent 0.2.2 (Node 22+)\nCommands: prepare DIRECTORY --allow-root GAME_DIR [--purpose game|cover|source]; download-source GAME_ID RELEASE_ID NEW_DIRECTORY --allow-root APPROVED_PARENT; upload FILE < private-receipt.json; login; logout; status; serve --allow-root GAME_DIR. Optional: --profile NAME.\n')
+  if(command==='serve'||command==='serve-local'){if(!options.roots.length)throw Error('allowed_game_directory_required');return serve({auth,roots:options.roots,outputDirectory,localOnly:command==='serve-local'})}
+  if(command==='--version'||command==='version')return print({helper:'0.3.0',plugins:'0.5.0'})
+  process.stderr.write('ToTop Agent 0.3.0 (Node 22+)\nCommands: sdk-docs overview|integration|capabilities|checklist|unity|godot; plan PROJECT; integrate PROJECT [--sdk-directory RELATIVE_DIRECTORY]; bind PROJECT GAME_ID; init NEW_DIRECTORY --engine html5|unity|godot --allow-root PARENT; inspect PROJECT; build PROJECT; dev EXPORT; check EXPORT (all require --allow-root); serve-local --allow-root GAME_DIR; prepare DIRECTORY --allow-root GAME_DIR [--purpose game|cover|source]; download-source GAME_ID RELEASE_ID NEW_DIRECTORY --allow-root APPROVED_PARENT; upload FILE < private-receipt.json; login; logout; status; serve --allow-root GAME_DIR. Optional: --profile NAME.\n')
 }
