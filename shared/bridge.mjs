@@ -29,8 +29,17 @@ const localTools=[
 export async function connectRemote(auth) {
   if(!await auth.tokens())throw Error('login_required')
   const client=new Client({name:'totop-agent-bridge',version:'0.3.2'})
-  const transport=new StreamableHTTPClientTransport(new URL(ENDPOINT),{authProvider:auth,fetch:safeFetch,reconnectionOptions:{maxRetries:0,initialReconnectionDelay:1000,maxReconnectionDelay:1000,reconnectionDelayGrowFactor:1}})
-  try{await client.connect(transport);return client}catch{await client.close();throw Error('connection_unavailable_run_login')}
+  const hosted = auth.mode === 'desktop'
+  const request = hosted ? async (url, init = {}) => {
+    if (new URL(url instanceof Request ? url.url : url).origin !== new URL(ENDPOINT).origin) throw Error('desktop_token_destination_denied')
+    const token = await auth.tokens()
+    const headers = new Headers(init.headers); headers.set('Authorization', 'Bearer ' + token.access_token)
+    const response = await safeFetch(url, { ...init, headers, redirect: 'error' })
+    if (response.status === 401) throw Object.assign(Error('publication_authorization_required'), { code: 401 })
+    return response
+  } : safeFetch
+  const transport=new StreamableHTTPClientTransport(new URL(ENDPOINT),{...(hosted ? {} : {authProvider:auth}),fetch:request,reconnectionOptions:{maxRetries:0,initialReconnectionDelay:1000,maxReconnectionDelay:1000,reconnectionDelayGrowFactor:1}})
+  try{await client.connect(transport);return client}catch(error){await client.close().catch(()=>{});if(hosted)throw error;throw Error('connection_unavailable_run_login')}
 }
 function value(result){if(result.isError)throw Error('remote_tool_failed');const raw=result.structuredContent??JSON.parse(result.content.find(x=>x.type==='text').text);return raw}
 const result=data=>({content:[{type:'text',text:JSON.stringify(data)}]})
