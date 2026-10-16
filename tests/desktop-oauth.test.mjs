@@ -13,3 +13,14 @@ test('cancelled desktop login never opens a callback listener or clears existing
   await assert.rejects(auth.login({ signal: abort.signal }), { name: 'AbortError' })
   assert.equal(cleared, false)
 })
+
+test('account recovery forces provider login rather than reusing another browser session',async()=>{
+ const auth=new BridgeAuth({})
+ const url=new URL('https://auth.totop.ai/oauth/authorize?state=original&code_challenge=challenge&redirect_uri=http%3A%2F%2F127.0.0.1%3A1234%2Ftotop%2Fcallback')
+ await auth.redirectToAuthorization(new URL(url));assert.equal(auth.authorizationUrl.searchParams.has('prompt'),false)
+ auth.forceLogin=true
+ await auth.redirectToAuthorization(new URL(url))
+ assert.equal(auth.authorizationUrl.searchParams.get('prompt'),'login')
+ for(const key of ['state','code_challenge','redirect_uri'])assert.equal(auth.authorizationUrl.searchParams.get(key),url.searchParams.get(key))
+ await assert.rejects(auth.redirectToAuthorization(new URL('https://example.com/oauth/authorize')),/untrusted_oauth_endpoint/)
+})

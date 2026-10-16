@@ -18,11 +18,11 @@ export class BridgeAuth {
   saveCodeVerifier(value){this.verifier=value}
   codeVerifier(){if(!this.verifier)throw Error('pkce_verifier_missing');return this.verifier}
   async invalidateCredentials(scope){if(scope==='all'||scope==='tokens'){this.memory=null;await this.store.clear()}if(scope==='all'||scope==='verifier')this.verifier=null}
-  async redirectToAuthorization(url){if(url.origin!==ISSUER||url.pathname!=='/oauth/authorize')throw Error('untrusted_oauth_endpoint');this.authorizationUrl=url}
-  async login({openBrowser=true,signal}={}){
+  async redirectToAuthorization(url){if(url.origin!==ISSUER||url.pathname!=='/oauth/authorize')throw Error('untrusted_oauth_endpoint');if(this.forceLogin)url.searchParams.set('prompt','login');this.authorizationUrl=url}
+  async login({openBrowser=true,signal,forceLogin=false}={}){
     signal?.throwIfAborted()
     // Login always represents an explicit account switch and starts a fresh authorization.
-    await this.invalidateCredentials('all');this.stateValue=randomBytes(32).toString('hex')
+    await this.invalidateCredentials('all');this.stateValue=randomBytes(32).toString('hex');this.forceLogin=forceLogin
     const server=createServer();await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)})
     this.redirect=`http://127.0.0.1:${server.address().port}/totop/callback`
     let timer,abortLogin
@@ -43,7 +43,7 @@ export class BridgeAuth {
       const code=await completion;signal?.throwIfAborted()
       if(await auth(this,{serverUrl:ENDPOINT,authorizationCode:code,scope:SCOPES,fetchFn:safeFetch})!=='AUTHORIZED')throw Error('authorization_failed')
       signal?.throwIfAborted()
-    }finally{signal?.removeEventListener('abort',abortLogin);clearTimeout(timer);server.closeAllConnections();server.close();this.verifier=null;this.authorizationUrl=null}
+    }finally{signal?.removeEventListener('abort',abortLogin);clearTimeout(timer);server.closeAllConnections();server.close();this.verifier=null;this.authorizationUrl=null;this.forceLogin=false}
   }
 }
 export { safeFetch }
