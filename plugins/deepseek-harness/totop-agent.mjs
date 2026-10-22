@@ -123,7 +123,7 @@ function zipSync(data, opts) {
   wzf(out, o, files.length, cdl, oe);
   return out;
 }
-var require2, _a, Worker, isMarkedAsUntransferable, u8, u16, i32, fleb, fdeb, clim, freb, _a, fl, revfl, _b, fd, revfd, rev, x, i, hMap, flt, i, i, i, i, fdt, i, flm, fdm, shft, slc, ec, err, wbits, wbits16, hTree, ln, lc, clen, wfblk, wblk, deo, et, dflt, crct, crc, dopt, mrg, wbytes, fltn, te, td, tds, exfl, wzh, wzf;
+var require2, _a, Worker, isMarkedAsUntransferable, u8, u16, i32, fleb, fdeb, clim, freb, _a, fl, revfl, _b, fd, revfd, rev, x, i, hMap, flt, i, i, i, i, fdt, i, flm, fdm, shft, slc, ec, err, wbits, wbits16, hTree, ln, lc, clen, wfblk, wblk, deo, et, dflt, crct, crc, dopt, mrg, wbytes, Deflate, fltn, te, td, tds, dbf, exfl, wzh, wzf, ZipPassThrough, ZipDeflate, Zip;
 var init_esm = __esm({
   "node_modules/fflate/esm/index.mjs"() {
     require2 = createRequire("/");
@@ -671,6 +671,74 @@ var init_esm = __esm({
       for (; v; ++b)
         d[b] = v, v >>>= 8;
     };
+    Deflate = /* @__PURE__ */ (function() {
+      function Deflate2(opts, cb) {
+        if (typeof opts == "function")
+          cb = opts, opts = {};
+        this.ondata = cb;
+        this.o = opts || {};
+        this.s = { l: 0, i: 32768, w: 32768, z: 32768 };
+        this.b = new u8(98304);
+        if (this.o.dictionary) {
+          var dict = this.o.dictionary.subarray(-32768);
+          this.b.set(dict, 32768 - dict.length);
+          this.s.i = 32768 - dict.length;
+        }
+      }
+      Deflate2.prototype.p = function(c, f) {
+        this.ondata(dopt(c, this.o, 0, 0, this.s), f);
+      };
+      Deflate2.prototype.push = function(chunk, final) {
+        if (!this.ondata)
+          err(5);
+        if (this.s.l)
+          err(4);
+        var endLen = chunk.length + this.s.z;
+        if (endLen > this.b.length) {
+          if (endLen > 2 * this.b.length - 32768) {
+            var newBuf = new u8(endLen & -32768);
+            newBuf.set(this.b.subarray(0, this.s.z));
+            this.b = newBuf;
+          }
+          var split = this.b.length - this.s.z;
+          this.b.set(chunk.subarray(0, split), this.s.z);
+          this.s.z = this.b.length;
+          this.p(this.b, false);
+          this.b.set(this.b.subarray(-32768));
+          this.b.set(chunk.subarray(split), 32768);
+          this.s.z = chunk.length - split + 32768;
+          this.s.i = 32766, this.s.w = 32768;
+        } else {
+          this.b.set(chunk, this.s.z);
+          this.s.z += chunk.length;
+        }
+        this.s.l = final & 1;
+        if (this.s.z > this.s.w + 8191 || final) {
+          this.p(this.b, final || false);
+          this.s.w = this.s.i, this.s.i -= 2;
+        }
+        if (final) {
+          this.s = this.o = {};
+          this.b = et;
+        }
+      };
+      Deflate2.prototype.flush = function(sync) {
+        if (!this.ondata)
+          err(5);
+        if (this.s.l)
+          err(4);
+        this.p(this.b, false);
+        this.s.w = this.s.i, this.s.i -= 2;
+        if (sync) {
+          var c = new u8(6);
+          c[0] = this.s.r >> 3;
+          var ep = wfblk(c, this.s.r, et);
+          this.s.r = 0;
+          this.ondata(c.subarray(0, ep >> 3), false);
+        }
+      };
+      return Deflate2;
+    })();
     fltn = function(d, p, t, o) {
       for (var k in d) {
         var val = d[k], n = p + k, op = o;
@@ -692,6 +760,9 @@ var init_esm = __esm({
       tds = 1;
     } catch (e) {
     }
+    dbf = function(l) {
+      return l == 1 ? 3 : l < 6 ? 2 : l == 9 ? 1 : 0;
+    };
     exfl = function(ex) {
       var le = 0;
       if (ex) {
@@ -750,6 +821,175 @@ var init_esm = __esm({
       wbytes(o, b + 12, d);
       wbytes(o, b + 16, e);
     };
+    ZipPassThrough = /* @__PURE__ */ (function() {
+      function ZipPassThrough2(filename) {
+        this.filename = filename;
+        this.c = crc();
+        this.size = 0;
+        this.compression = 0;
+      }
+      ZipPassThrough2.prototype.process = function(chunk, final) {
+        this.ondata(null, chunk, final);
+      };
+      ZipPassThrough2.prototype.push = function(chunk, final) {
+        if (!this.ondata)
+          err(5);
+        this.c.p(chunk);
+        this.size += chunk.length;
+        if (final)
+          this.crc = this.c.d();
+        this.process(chunk, final || false);
+      };
+      return ZipPassThrough2;
+    })();
+    ZipDeflate = /* @__PURE__ */ (function() {
+      function ZipDeflate2(filename, opts) {
+        var _this = this;
+        if (!opts)
+          opts = {};
+        ZipPassThrough.call(this, filename);
+        this.d = new Deflate(opts, function(dat, final) {
+          _this.ondata(null, dat, final);
+        });
+        this.compression = 8;
+        this.flag = dbf(opts.level);
+      }
+      ZipDeflate2.prototype.process = function(chunk, final) {
+        try {
+          this.d.push(chunk, final);
+        } catch (e) {
+          this.ondata(e, null, final);
+        }
+      };
+      ZipDeflate2.prototype.push = function(chunk, final) {
+        ZipPassThrough.prototype.push.call(this, chunk, final);
+      };
+      return ZipDeflate2;
+    })();
+    Zip = /* @__PURE__ */ (function() {
+      function Zip2(cb) {
+        this.ondata = cb;
+        this.u = [];
+        this.d = 1;
+      }
+      Zip2.prototype.add = function(file) {
+        var _this = this;
+        if (!this.ondata)
+          err(5);
+        if (this.d & 2)
+          this.ondata(err(4 + (this.d & 1) * 8, 0, 1), null, false);
+        else {
+          var f = strToU8(file.filename), fl_1 = f.length;
+          var com = file.comment, o = com && strToU8(com);
+          var u = fl_1 != file.filename.length || o && com.length != o.length;
+          var hl_1 = fl_1 + exfl(file.extra) + 30;
+          if (fl_1 > 65535)
+            this.ondata(err(11, 0, 1), null, false);
+          var header = new u8(hl_1);
+          wzh(header, 0, file, f, u, -1);
+          var chks_1 = [header];
+          var pAll_1 = function() {
+            for (var _i = 0, chks_2 = chks_1; _i < chks_2.length; _i++) {
+              var chk = chks_2[_i];
+              _this.ondata(null, chk, false);
+            }
+            chks_1 = [];
+          };
+          var tr_1 = this.d;
+          this.d = 0;
+          var ind_1 = this.u.length;
+          var uf_1 = mrg(file, {
+            f,
+            u,
+            o,
+            t: function() {
+              if (file.terminate)
+                file.terminate();
+            },
+            r: function() {
+              pAll_1();
+              if (tr_1) {
+                var nxt = _this.u[ind_1 + 1];
+                if (nxt)
+                  nxt.r();
+                else
+                  _this.d = 1;
+              }
+              tr_1 = 1;
+            }
+          });
+          var cl_1 = 0;
+          file.ondata = function(err2, dat, final) {
+            if (err2) {
+              _this.ondata(err2, dat, final);
+              _this.terminate();
+            } else {
+              cl_1 += dat.length;
+              chks_1.push(dat);
+              if (final) {
+                var dd = new u8(16);
+                wbytes(dd, 0, 134695760);
+                wbytes(dd, 4, file.crc);
+                wbytes(dd, 8, cl_1);
+                wbytes(dd, 12, file.size);
+                chks_1.push(dd);
+                uf_1.c = cl_1, uf_1.b = hl_1 + cl_1 + 16, uf_1.crc = file.crc, uf_1.size = file.size;
+                if (tr_1)
+                  uf_1.r();
+                tr_1 = 1;
+              } else if (tr_1)
+                pAll_1();
+            }
+          };
+          this.u.push(uf_1);
+        }
+      };
+      Zip2.prototype.end = function() {
+        var _this = this;
+        if (this.d & 2) {
+          this.ondata(err(4 + (this.d & 1) * 8, 0, 1), null, true);
+          return;
+        }
+        if (this.d)
+          this.e();
+        else
+          this.u.push({
+            r: function() {
+              if (!(_this.d & 1))
+                return;
+              _this.u.splice(-1, 1);
+              _this.e();
+            },
+            t: function() {
+            }
+          });
+        this.d = 3;
+      };
+      Zip2.prototype.e = function() {
+        var bt = 0, l = 0, tl = 0;
+        for (var _i = 0, _a4 = this.u; _i < _a4.length; _i++) {
+          var f = _a4[_i];
+          tl += 46 + f.f.length + exfl(f.extra) + (f.o ? f.o.length : 0);
+        }
+        var out = new u8(tl + 22);
+        for (var _b2 = 0, _c = this.u; _b2 < _c.length; _b2++) {
+          var f = _c[_b2];
+          wzh(out, bt, f, f.f, f.u, -f.c - 2, l, f.o);
+          bt += 46 + f.f.length + exfl(f.extra) + (f.o ? f.o.length : 0), l += f.b;
+        }
+        wzf(out, bt, this.u.length, tl, l);
+        this.ondata(null, out, true);
+        this.d = 2;
+      };
+      Zip2.prototype.terminate = function() {
+        for (var _i = 0, _a4 = this.u; _i < _a4.length; _i++) {
+          var f = _a4[_i];
+          f.t();
+        }
+        this.d = 2;
+      };
+      return Zip2;
+    })();
   }
 });
 
@@ -10134,12 +10374,14 @@ var init_oauth = __esm({
       }
       async redirectToAuthorization(url2) {
         if (url2.origin !== ISSUER || url2.pathname !== "/oauth/authorize") throw Error("untrusted_oauth_endpoint");
+        if (this.forceLogin) url2.searchParams.set("prompt", "login");
         this.authorizationUrl = url2;
       }
-      async login({ openBrowser = true, signal } = {}) {
+      async login({ openBrowser = true, signal, forceLogin = false } = {}) {
         signal?.throwIfAborted();
         await this.invalidateCredentials("all");
         this.stateValue = randomBytes(32).toString("hex");
+        this.forceLogin = forceLogin;
         const server = createServer();
         await new Promise((resolve7, reject) => {
           server.once("error", reject);
@@ -10206,6 +10448,7 @@ var init_oauth = __esm({
           server.close();
           this.verifier = null;
           this.authorizationUrl = null;
+          this.forceLogin = false;
         }
       }
     };
@@ -10411,7 +10654,7 @@ var init_source = __esm({
 
 // shared/artifacts.mjs
 import { constants } from "node:fs";
-import { lstat as lstat2, open as open3, readdir as readdir2, realpath, mkdir as mkdir2 } from "node:fs/promises";
+import { lstat as lstat2, open as open3, readdir as readdir2, realpath, mkdir as mkdir2, unlink } from "node:fs/promises";
 import { resolve as resolve2, relative as relative2, isAbsolute, dirname as dirname2, extname as extname2, parse as parse2 } from "node:path";
 import { homedir } from "node:os";
 import { createHash as createHash3, randomUUID } from "node:crypto";
@@ -10465,7 +10708,15 @@ function contentType(data) {
   if (data.length > 20 && data.subarray(0, 4).toString() === "RIFF" && data.subarray(8, 12).toString() === "WEBP" && data.readUInt32LE(4) + 8 === data.length) return "image/webp";
   throw Error("unsupported_cover_format");
 }
-async function inventory(root) {
+function runtimeLimits(limits = {}) {
+  const cap = (value2, max) => {
+    if (value2 === void 0) return max;
+    if (!Number.isSafeInteger(value2) || value2 < 1) throw Error("invalid_runtime_limits");
+    return Math.min(value2, max);
+  };
+  return { maxZipBytes: cap(limits.maxZipBytes, GAME_ZIP_LIMIT), maxUnpackedBytes: cap(limits.maxUnpackedBytes, GAME_ZIP_LIMIT), maxFiles: cap(limits.maxFiles, GAME_FILE_LIMIT) };
+}
+async function inventory(root, limits) {
   const files = [];
   let total = 0;
   async function walk(dir) {
@@ -10479,32 +10730,101 @@ async function inventory(root) {
       }
       if (!info.isFile() || !runtimeFileSupported(path)) throw Error("unsupported_build_file");
       total += info.size;
-      if (info.size > GAME_ZIP_LIMIT || total > 500 * 1024 * 1024 || files.length >= GAME_FILE_LIMIT) throw Error("build_limit_exceeded");
+      if (info.size > limits.maxUnpackedBytes || total > limits.maxUnpackedBytes || files.length >= limits.maxFiles) throw Error("build_limit_exceeded");
       files.push({ path, name, info });
     }
   }
   await walk(root);
   return files;
 }
-async function prepareArtifact({ path, purpose, roots, outputDirectory }) {
+async function openStable(path, limit, expected, allowEmpty = false) {
+  const absolute = await unlinkedPath(path), before = expected ?? await lstat2(absolute);
+  if (!before.isFile() || before.size > limit || before.size < (allowEmpty ? 0 : 1)) throw Error("invalid_artifact_size_or_type");
+  const handle = await open3(absolute, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+  const check = async () => {
+    if (!same(before, await handle.stat()) || !same(before, await lstat2(absolute)) || await unlinkedPath(absolute) !== absolute) throw Error("artifact_changed");
+  };
+  try {
+    await check();
+    return { handle, check };
+  } catch (error2) {
+    await handle.close();
+    throw error2;
+  }
+}
+async function* stableChunks(path, limit, expected, allowEmpty = false) {
+  const input = await openStable(path, limit, expected, allowEmpty);
+  try {
+    for await (const chunk of input.handle.createReadStream({ autoClose: false, highWaterMark: 64 * 1024 })) yield chunk;
+    await input.check();
+  } finally {
+    await input.handle.close();
+  }
+}
+async function prepareRuntime(source, destination, limits) {
+  const files = await inventory(source, limits);
+  if (!files.some((x2) => x2.name === "index.html")) throw Error("root_index_html_required");
+  const output = await open3(destination, "wx", 384), hash3 = createHash3("sha256");
+  let bytes = 0, chunks = [];
+  const zip = new Zip((error2, chunk) => {
+    if (error2) throw error2;
+    bytes += chunk.length;
+    if (bytes > limits.maxZipBytes) throw Error("zip_upload_limit_exceeded");
+    chunks.push(Buffer.from(chunk));
+  });
+  const drain = async () => {
+    for (const chunk of chunks) {
+      hash3.update(chunk);
+      await output.writeFile(chunk);
+    }
+    chunks = [];
+  };
+  try {
+    for (const file of files) {
+      const input = await openStable(file.path, limits.maxUnpackedBytes, file.info, true);
+      try {
+        const entry = new ZipDeflate(file.name, { level: 6, mtime: /* @__PURE__ */ new Date("2020-01-01T00:00:00Z") });
+        zip.add(entry);
+        let overlap = "";
+        for await (const chunk of input.handle.createReadStream({ autoClose: false, highWaterMark: 64 * 1024 })) {
+          const text = overlap + chunk.toString("latin1");
+          if (secret.test(text)) throw Error("possible_secret_in_build");
+          overlap = text.slice(-512);
+          entry.push(chunk);
+          await drain();
+        }
+        await input.check();
+        entry.push(new Uint8Array(), true);
+        await drain();
+      } finally {
+        await input.handle.close();
+      }
+    }
+    const after = await inventory(source, limits);
+    if (after.length !== files.length || after.some((x2, i2) => x2.name !== files[i2].name || !same(x2.info, files[i2].info))) throw Error("build_changed");
+    zip.end();
+    await drain();
+    return { sha256: hash3.digest("hex"), bytes, files: files.length };
+  } catch (error2) {
+    await output.close();
+    await unlink(destination).catch(() => {
+    });
+    throw error2;
+  } finally {
+    await output.close();
+  }
+}
+async function prepareArtifact({ path, purpose, roots, outputDirectory, limits }) {
   const source = await permittedPath(path, roots);
+  if (inside(source, resolve2(outputDirectory))) throw Error("output_inside_build");
+  await mkdir2(outputDirectory, { recursive: true, mode: 448 });
+  await unlinkedPath(outputDirectory);
+  const artifactHandle = randomUUID();
   let data, type, count, excluded;
   if (purpose === "game") {
     if (!(await lstat2(source)).isDirectory()) throw Error("game_build_directory_required");
-    const files = await inventory(source);
-    if (!files.some((x2) => x2.name === "index.html")) throw Error("root_index_html_required");
-    const entries = {};
-    for (const file of files) {
-      const bytes = await readStable(file.path, GAME_ZIP_LIMIT, file.info, true);
-      if (secret.test(bytes.toString("latin1"))) throw Error("possible_secret_in_build");
-      entries[file.name] = [bytes, { mtime: /* @__PURE__ */ new Date("2020-01-01T00:00:00Z") }];
-    }
-    const after = await inventory(source);
-    if (after.length !== files.length || after.some((x2, i2) => x2.name !== files[i2].name || !same(x2.info, files[i2].info))) throw Error("build_changed");
-    data = Buffer.from(zipSync(entries, { level: 6 }));
-    type = "application/zip";
-    count = files.length;
-    if (data.length > GAME_ZIP_LIMIT) throw Error("zip_upload_limit_exceeded");
+    const destination2 = resolve2(outputDirectory, artifactHandle + ".zip");
+    return { artifactHandle, path: destination2, ...await prepareRuntime(source, destination2, runtimeLimits(limits)), contentType: "application/zip", purpose };
   } else if (purpose === "source") {
     if (!(await lstat2(source)).isDirectory()) throw Error("source_directory_required");
     const prepared = await (await Promise.resolve().then(() => (init_source(), source_exports))).prepareSourceDirectory(source);
@@ -10516,10 +10836,7 @@ async function prepareArtifact({ path, purpose, roots, outputDirectory }) {
     data = await readStable(source, COVER_LIMIT);
     type = contentType(data);
   } else throw Error("invalid_artifact_purpose");
-  await mkdir2(outputDirectory, { recursive: true, mode: 448 });
-  await unlinkedPath(outputDirectory);
-  if (inside(source, resolve2(outputDirectory))) throw Error("output_inside_build");
-  const artifactHandle = randomUUID(), destination = resolve2(outputDirectory, artifactHandle + (type === "application/zip" ? ".zip" : type === "image/png" ? ".png" : type === "image/jpeg" ? ".jpg" : ".webp"));
+  const destination = resolve2(outputDirectory, artifactHandle + (type === "application/zip" ? ".zip" : type === "image/png" ? ".png" : type === "image/jpeg" ? ".jpg" : ".webp"));
   const handle = await open3(destination, "wx", 384);
   try {
     await handle.writeFile(data);
@@ -10543,23 +10860,48 @@ function validateReceipt(receipt) {
   return url2;
 }
 async function uploadArtifact(path, receipt, { signal, send = sendPut } = {}) {
-  const url2 = validateReceipt(receipt), data = await readStable(path, receipt.bytes);
-  if (data.length !== receipt.bytes || createHash3("sha256").update(data).digest("hex") !== receipt.sha256) throw Error("artifact_identity_mismatch");
-  const status = await send(url2, data, { ...receipt.headers, "Content-Length": String(data.length) }, signal);
-  if (status === 412) return { status: "object_exists", next: "complete_upload" };
-  if (![200, 201, 204].includes(status)) throw Error("upload_unconfirmed_query_status");
-  return { status: "uploaded", bytes: receipt.bytes, sha256: receipt.sha256, next: "complete_upload" };
+  signal?.throwIfAborted();
+  const url2 = validateReceipt(receipt), input = await openStable(path, receipt.bytes);
+  let stream;
+  try {
+    const hash3 = createHash3("sha256");
+    let bytes = 0;
+    for await (const chunk of input.handle.createReadStream({ autoClose: false, highWaterMark: 64 * 1024 })) {
+      signal?.throwIfAborted();
+      bytes += chunk.length;
+      hash3.update(chunk);
+    }
+    await input.check();
+    if (bytes !== receipt.bytes || hash3.digest("hex") !== receipt.sha256) throw Error("artifact_identity_mismatch");
+    stream = input.handle.createReadStream({ autoClose: false, start: 0, end: receipt.bytes - 1, highWaterMark: 64 * 1024 });
+    const status = await send(url2, stream, { ...receipt.headers, "Content-Length": String(receipt.bytes) }, signal);
+    try {
+      await input.check();
+    } catch {
+      throw Error("upload_unconfirmed_query_status");
+    }
+    if (status === 412) return { status: "object_exists", next: "complete_upload" };
+    if (![200, 201, 204].includes(status)) throw Error("upload_unconfirmed_query_status");
+    return { status: "uploaded", bytes: receipt.bytes, sha256: receipt.sha256, next: "complete_upload" };
+  } finally {
+    stream?.destroy();
+    await input.handle.close();
+  }
 }
-function sendPut(url2, data, headers, signal) {
+function sendPut(url2, data, headers, signal, requester = request) {
   return new Promise((resolve7, reject) => {
-    const req = request(url2, { method: "PUT", headers, signal }, (res) => {
+    const req = requester(url2, { method: "PUT", headers, signal }, (res) => {
       res.resume();
       resolve7(res.statusCode);
     });
-    const timer = setTimeout(() => req.destroy(), 12e4);
-    req.on("close", () => clearTimeout(timer));
+    req.setTimeout(12e4, () => req.destroy());
+    req.on("close", () => {
+      data.unpipe(req);
+      data.pause();
+    });
     req.on("error", () => reject(Error("upload_unconfirmed_query_status")));
-    req.end(data);
+    data.on("error", () => req.destroy());
+    data.pipe(req);
   });
 }
 var ZIP_LIMIT, COVER_LIMIT, GAME_ZIP_LIMIT, GAME_FILE_LIMIT, forbidden, allowed, runtimeFileSupported, secret, inside, same;
@@ -10568,7 +10910,7 @@ var init_artifacts = __esm({
     init_esm();
     ZIP_LIMIT = 100 * 1024 * 1024;
     COVER_LIMIT = 10 * 1024 * 1024;
-    GAME_ZIP_LIMIT = 200 * 1024 * 1024;
+    GAME_ZIP_LIMIT = 800 * 1024 * 1024;
     GAME_FILE_LIMIT = 2e4;
     forbidden = /* @__PURE__ */ new Set([".git", ".hg", ".svn", "node_modules", ".ssh", ".aws", ".npmrc", ".pypirc", "credentials", "id_rsa", "id_ed25519"]);
     allowed = new Set(".html .htm .js .mjs .css .json .wasm .data .bin .unityweb .pck .gz .br .png .jpg .jpeg .webp .gif .svg .ico .avif .ktx .ktx2 .basis .mp3 .ogg .wav .m4a .mp4 .webm .woff .woff2 .ttf .otf .glb .gltf .obj .mtl .txt .xml".split(" "));
@@ -17860,7 +18202,7 @@ import { rm as rm5, lstat as lstat6 } from "node:fs/promises";
 
 // shared/credentials.mjs
 init_artifacts();
-import { mkdir as mkdir3, lstat as lstat3, readFile, open as open4, rename, unlink } from "node:fs/promises";
+import { mkdir as mkdir3, lstat as lstat3, readFile, open as open4, rename, unlink as unlink2 } from "node:fs/promises";
 import { resolve as resolve3 } from "node:path";
 import { randomUUID as randomUUID2 } from "node:crypto";
 import { execFile } from "node:child_process";
@@ -17955,14 +18297,14 @@ var CredentialStore = class {
   }
   async removeBlock() {
     try {
-      await unlink(this.block);
+      await unlink2(this.block);
     } catch (error2) {
       if (error2.code !== "ENOENT") throw Error("credential_cleanup_failed");
     }
   }
   async removeFallback() {
     try {
-      await unlink(this.file);
+      await unlink2(this.file);
     } catch (error2) {
       if (error2.code !== "ENOENT") throw Error("credential_cleanup_failed");
     }
@@ -21157,10 +21499,12 @@ import { rm as rm4 } from "node:fs/promises";
 
 // shared/game-dev.mjs
 init_artifacts();
-import { mkdir as mkdir4, readFile as readFile2, readdir as readdir3, writeFile, lstat as lstat4, copyFile, rename as rename2, rm as rm2 } from "node:fs/promises";
+import { mkdir as mkdir4, readFile as readFile2, readdir as readdir3, writeFile, lstat as lstat4, copyFile, rename as rename2, rm as rm2, open as open5 } from "node:fs/promises";
 import { resolve as resolve4, dirname as dirname3, relative as relative3, isAbsolute as isAbsolute2, extname as extname3 } from "node:path";
 import { createHash as createHash4, randomUUID as randomUUID3 } from "node:crypto";
 import { createServer as createServer2 } from "node:http";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 
 // shared/game-manifest.mjs
 import { readFileSync } from "node:fs";
@@ -21272,7 +21616,7 @@ async function checkGameBuild({ path, roots }) {
   }
   await walk(root);
   const bytes = files.reduce((total, file) => total + file.bytes, 0);
-  check("unpacked_limit", bytes <= 524288e3 && files.length <= 2e4, "Current runtime maximum 500 MiB / 20,000 files; recheck server before upload");
+  check("unpacked_limit", bytes <= GAME_ZIP_LIMIT && files.length <= GAME_FILE_LIMIT, "Current runtime maximum 800 MiB / 20,000 files; recheck server before upload");
   const unsupported = files.filter((file) => !runtimeFileSupported(file.name)).map((file) => file.name);
   check("runtime_files", unsupported.length === 0, unsupported.length ? "Export only runtime files; unsupported: " + unsupported.slice(0, 20).join(", ") : "Export contains supported runtime assets");
   return { root, sdkVersion, checks, files: files.length, unpackedBytes: bytes, staticStatus: checks.every((check2) => check2.status === "pass") ? "pass" : "fail", buildStatus: "not_run", gameplayStatus: "not_run", next: "Run actual browser/engine QA; static checks do not prove gameplay" };
@@ -21286,6 +21630,7 @@ async function buildHtmlGame({ path, roots }) {
   const output = resolve4(outParent, randomUUID3());
   await mkdir4(output);
   const sdkHash = createHash4("sha256").update(await readFile2(new URL("totop-game.global.js", assets))).digest("hex"), hashes = {}, excluded = [];
+  let total = 0, count = 0;
   async function copy2(from, to) {
     let installedSdk = false;
     try {
@@ -21306,9 +21651,19 @@ async function buildHtmlGame({ path, roots }) {
         continue;
       }
       if (!runtimeFileSupported(entry.name)) throw Error("unsupported_build_file: " + relative3(source, input));
-      const data = await readStable(input, 200 * 1024 * 1024, void 0, true);
-      await writeFile(dest, data, { flag: "wx" });
-      hashes[relative3(output, dest).replaceAll("\\", "/")] = createHash4("sha256").update(data).digest("hex");
+      const info = await lstat4(input);
+      total += info.size;
+      if (total > GAME_ZIP_LIMIT || ++count > GAME_FILE_LIMIT) throw Error("build_limit_exceeded");
+      const target = await open5(dest, "wx"), hash3 = createHash4("sha256");
+      try {
+        for await (const chunk of stableChunks(input, GAME_ZIP_LIMIT, info, true)) {
+          hash3.update(chunk);
+          await target.writeFile(chunk);
+        }
+      } finally {
+        await target.close();
+      }
+      hashes[relative3(output, dest).replaceAll("\\", "/")] = hash3.digest("hex");
     }
   }
   try {
@@ -21403,10 +21758,13 @@ async function startGamePreview({ path, roots, port = 0, config: config2 = {} })
       const original = compression === ".br" || compression === ".gz" ? file.slice(0, -compression.length) : file;
       if (compression === ".br" || compression === ".gz") res.setHeader("Content-Encoding", compression === ".br" ? "br" : "gzip");
       res.setHeader("Content-Type", types[extname3(original)] ?? "application/octet-stream");
-      res.end(await readStable(file, 200 * 1024 * 1024, void 0, true));
+      await pipeline(Readable.from(stableChunks(file, GAME_ZIP_LIMIT, void 0, true)), res);
     } catch {
-      res.statusCode = 404;
-      res.end("Not found");
+      if (res.headersSent) res.destroy();
+      else {
+        res.statusCode = 404;
+        res.end("Not found");
+      }
     }
   });
   await new Promise((resolve7, reject) => {
@@ -21567,12 +21925,24 @@ var localTools = [
 async function connectRemote(auth2) {
   if (!await auth2.tokens()) throw Error("login_required");
   const client = new Client({ name: "totop-agent-bridge", version: "0.3.2" });
-  const transport = new StreamableHTTPClientTransport(new URL(ENDPOINT), { authProvider: auth2, fetch: safeFetch, reconnectionOptions: { maxRetries: 0, initialReconnectionDelay: 1e3, maxReconnectionDelay: 1e3, reconnectionDelayGrowFactor: 1 } });
+  const hosted = auth2.mode === "desktop";
+  const request2 = hosted ? async (url2, init = {}) => {
+    if (new URL(url2 instanceof Request ? url2.url : url2).origin !== new URL(ENDPOINT).origin) throw Error("desktop_token_destination_denied");
+    const token = await auth2.tokens();
+    const headers = new Headers(init.headers);
+    headers.set("Authorization", "Bearer " + token.access_token);
+    const response = await safeFetch(url2, { ...init, headers, redirect: "error" });
+    if (response.status === 401) throw Object.assign(Error("publication_authorization_required"), { code: 401 });
+    return response;
+  } : safeFetch;
+  const transport = new StreamableHTTPClientTransport(new URL(ENDPOINT), { ...hosted ? {} : { authProvider: auth2 }, fetch: request2, reconnectionOptions: { maxRetries: 0, initialReconnectionDelay: 1e3, maxReconnectionDelay: 1e3, reconnectionDelayGrowFactor: 1 } });
   try {
     await client.connect(transport);
     return client;
-  } catch {
-    await client.close();
+  } catch (error2) {
+    await client.close().catch(() => {
+    });
+    if (hosted) throw error2;
     throw Error("connection_unavailable_run_login");
   }
 }

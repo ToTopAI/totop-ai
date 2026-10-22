@@ -8,18 +8,51 @@ import { createHash } from 'node:crypto'
 import { unzipSync } from 'fflate'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { prepareArtifact, permittedPath, readStable, uploadArtifact, validateReceipt, GAME_ZIP_LIMIT, GAME_FILE_LIMIT, ZIP_LIMIT } from '../shared/artifacts.mjs'
+import { prepareArtifact, permittedPath, readStable, uploadArtifact, validateReceipt, sendPut, GAME_ZIP_LIMIT, GAME_FILE_LIMIT, ZIP_LIMIT } from '../shared/artifacts.mjs'
 import { CredentialStore } from '../shared/credentials.mjs'
 import { serve } from '../shared/bridge.mjs'
 const fixture=async t=>{const dir=await mkdtemp(resolve(realpathSync(tmpdir()),'totop-agent-'));t.after(()=>rm(dir,{recursive:true,force:true}));const game=resolve(dir,'game');await mkdir(game);await writeFile(resolve(game,'index.html'),'<html>game</html>');return {dir,game,outputDirectory:resolve(dir,'artifacts')}}
 const receipt=data=>({uploadId:'upload-test',method:'PUT',uploadUrl:'https://'+ 'a'.repeat(32)+'.r2.cloudflarestorage.com/bucket/packages/11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222/game.zip?X-Amz-Signature='+'b'.repeat(64),headers:{'Content-Type':'application/zip','If-None-Match':'*'},sha256:createHash('sha256').update(data).digest('hex'),bytes:data.length,expiresInSeconds:600})
-test('runtime receipts support 200 MiB while source receipts retain 100 MiB and reject type confusion',()=>{
-  assert.equal(GAME_ZIP_LIMIT,200*1024*1024);assert.equal(GAME_FILE_LIMIT,20000);assert.equal(ZIP_LIMIT,100*1024*1024)
-  const r={...receipt(Buffer.from('fixture')),bytes:159400916}
+test('runtime receipts support 800 MiB while source receipts retain 100 MiB and reject type confusion',()=>{
+  assert.equal(GAME_ZIP_LIMIT,800*1024*1024);assert.equal(GAME_FILE_LIMIT,20000);assert.equal(ZIP_LIMIT,100*1024*1024)
+  const r={...receipt(Buffer.from('fixture')),bytes:GAME_ZIP_LIMIT}
   assert.ok(validateReceipt(r));assert.throws(()=>validateReceipt({...r,bytes:GAME_ZIP_LIMIT+1}),/identity/)
   const source={...r,uploadUrl:r.uploadUrl.replace('/packages/','/game-sources/v1/').replace('/game.zip','/source.zip')}
   assert.throws(()=>validateReceipt(source),/identity/);assert.ok(validateReceipt({...source,bytes:ZIP_LIMIT}))
   assert.throws(()=>validateReceipt({...r,headers:{...r.headers,'Content-Type':'image/png'}}),/headers/)
+})
+test('runtime preparation respects live lower limits and removes failed partial ZIPs',async t=>{
+  const f=await fixture(t)
+  await assert.rejects(prepareArtifact({path:f.game,purpose:'game',roots:[f.game],outputDirectory:f.outputDirectory,limits:{maxUnpackedBytes:5}}),/build_limit/)
+  await assert.rejects(prepareArtifact({path:f.game,purpose:'game',roots:[f.game],outputDirectory:f.outputDirectory,limits:{maxZipBytes:5}}),/zip_upload_limit/)
+  const {readdir}=await import('node:fs/promises');assert.deepEqual(await readdir(f.outputDirectory),[])
+  const boundary=Buffer.alloc(65536+100,32);Buffer.from('-----BEGIN PRIVATE KEY-----').copy(boundary,65530)
+  await writeFile(resolve(f.game,'split.txt'),boundary)
+  await assert.rejects(prepareArtifact({path:f.game,purpose:'game',roots:[f.game],outputDirectory:f.outputDirectory}),/possible_secret/)
+  assert.deepEqual(await readdir(f.outputDirectory),[])
+})
+test('uploads stream bounded chunks and treat a concurrent material change as uncertain',async t=>{
+  const f=await fixture(t),data=Buffer.alloc(3*1024*1024,7),file=resolve(f.game,'game.zip');await writeFile(file,data)
+  let maxChunk=0,bytes=0;const hash=createHash('sha256')
+  const send=async(_url,stream)=>{for await(const chunk of stream){maxChunk=Math.max(maxChunk,chunk.length);bytes+=chunk.length;hash.update(chunk)}return 200}
+  assert.equal((await uploadArtifact(file,receipt(data),{send})).status,'uploaded')
+  assert.equal(bytes,data.length);assert.ok(maxChunk<=65536);assert.equal(hash.digest('hex'),receipt(data).sha256)
+  await assert.rejects(uploadArtifact(file,receipt(data),{send:async(_url,stream)=>{for await(const chunk of stream){}await writeFile(file,'changed');return 200}}),/unconfirmed/)
+})
+test('HTTPS PUT pipes file bytes, sets an idle timeout, and classifies socket failure as uncertain',async t=>{
+  const {Writable}=await import('node:stream'),f=await fixture(t),data=Buffer.alloc(2*1024*1024,9),file=resolve(f.game,'game.zip');await writeFile(file,data)
+  for(const fail of [false,true]){
+    let bytes=0,idleTimeout
+    const requester=(_url,options,reply)=>{
+      assert.equal(options.method,'PUT');assert.equal(options.headers['Content-Length'],String(data.length))
+      const sink=new Writable({write(chunk,_encoding,done){bytes+=chunk.length;done(fail?Error('socket disconnected'):undefined)}})
+      sink.setTimeout=(ms)=>{idleTimeout=ms};sink.once('finish',()=>reply({statusCode:200,resume(){}}));return sink
+    }
+    const operation=uploadArtifact(file,receipt(data),{send:(...args)=>sendPut(...args,requester)})
+    if(fail)await assert.rejects(operation,/upload_unconfirmed_query_status/)
+    else{assert.equal((await operation).status,'uploaded');assert.equal(bytes,data.length)}
+    assert.equal(idleTimeout,120000)
+  }
 })
 test('runtime inventory accepts more than 5000 files without relaxing source inventory',async t=>{
   const f=await fixture(t)

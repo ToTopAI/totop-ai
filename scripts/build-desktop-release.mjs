@@ -6,9 +6,10 @@ const root=resolve(import.meta.dirname,'..'), pkg=JSON.parse(await readFile(reso
 const desktop=JSON.parse(await readFile(resolve(root,'adapters/desktop/package.json')))
 await mkdir(resolve(root,'dist'),{recursive:true})
 const result=await build({entryPoints:[resolve(root,'shared/desktop.mjs')],bundle:true,write:false,platform:'node',format:'esm',target:'node22',minify:true,external:['@napi-rs/keyring'],banner:{js:"import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);"}})
-const client=await build({entryPoints:[resolve(root,'adapters/desktop/client.js')],bundle:true,write:false,platform:'browser',format:'iife',target:'es2022',loader:{'.png':'dataurl'}})
+const client=await build({absWorkingDir:root,entryPoints:[resolve(root,'adapters/desktop/client.js')],bundle:true,write:false,platform:'browser',format:'iife',target:'es2022',loader:{'.png':'dataurl'}})
 const agent=result.outputFiles[0].text
-const files={'agent.mjs':agent,'plugin.mjs':await readFile(resolve(root,'adapters/desktop/plugin.mjs'),'utf8'),'client.js':client.outputFiles[0].text}
+const plugin=await build({absWorkingDir:root,entryPoints:[resolve(root,'adapters/desktop/plugin.mjs')],bundle:true,write:false,platform:'node',format:'esm',target:'node22'})
+const files={'agent.mjs':agent,'plugin.mjs':plugin.outputFiles[0].text,'client.js':client.outputFiles[0].text}
 const assets={}
 async function collect(directory,prefix='game-assets/'){
  for(const entry of await readdir(directory,{withFileTypes:true})){

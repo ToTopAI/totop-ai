@@ -1,8 +1,10 @@
-import {mkdir,readFile,readdir,writeFile,lstat,copyFile,rename,rm} from 'node:fs/promises'
+import {mkdir,readFile,readdir,writeFile,lstat,copyFile,rename,rm,open} from 'node:fs/promises'
 import {resolve,dirname,relative,isAbsolute,extname} from 'node:path'
 import {createHash,randomUUID} from 'node:crypto'
 import {createServer} from 'node:http'
-import {permittedPath,unlinkedPath,readStable,runtimeFileSupported} from './artifacts.mjs'
+import {Readable} from 'node:stream'
+import {pipeline} from 'node:stream/promises'
+import {permittedPath,unlinkedPath,readStable,runtimeFileSupported,stableChunks,GAME_ZIP_LIMIT,GAME_FILE_LIMIT} from './artifacts.mjs'
 import {validateGameManifest} from './game-manifest.mjs'
 const assets=new URL('./game-assets/',import.meta.url)
 const sdkVersion='1.0.0'
@@ -54,7 +56,7 @@ export async function checkGameBuild({path,roots}){
  try{await readStable(resolve(root,'index.html'),1048576);check('root_entry',true,'Root index.html exists')}catch{check('root_entry',false,'Export the game with root index.html')}
  try{const value=JSON.parse((await readStable(resolve(root,'totop.game.json'),32768)).toString()),valid=validateGameManifest(value);check('sdk_manifest',valid.valid,valid.valid?'Pinned SDK manifest matches the full schema':valid.errorMessage);check('platform_binding',typeof value.gameId==='string'&&/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value.gameId),'Binding required before publication; local prototype can omit it')}catch{check('sdk_manifest',false,'Missing/invalid totop.game.json')}
  const files=[];async function walk(dir){for(const entry of await readdir(dir,{withFileTypes:true})){const file=resolve(dir,entry.name);if(entry.isSymbolicLink())throw Error('linked_path_forbidden');if(entry.isDirectory())await walk(file);else if(entry.isFile())files.push({name:relative(root,file).replaceAll('\\','/'),bytes:(await lstat(file)).size})}}await walk(root)
- const bytes=files.reduce((total,file)=>total+file.bytes,0);check('unpacked_limit',bytes<=524288000&&files.length<=20000,'Current runtime maximum 500 MiB / 20,000 files; recheck server before upload')
+ const bytes=files.reduce((total,file)=>total+file.bytes,0);check('unpacked_limit',bytes<=GAME_ZIP_LIMIT&&files.length<=GAME_FILE_LIMIT,'Current runtime maximum 800 MiB / 20,000 files; recheck server before upload')
  const unsupported=files.filter(file=>!runtimeFileSupported(file.name)).map(file=>file.name)
  check('runtime_files',unsupported.length===0,unsupported.length?'Export only runtime files; unsupported: '+unsupported.slice(0,20).join(', '):'Export contains supported runtime assets')
  return{root,sdkVersion,checks,files:files.length,unpackedBytes:bytes,staticStatus:checks.every(check=>check.status==='pass')?'pass':'fail',buildStatus:'not_run',gameplayStatus:'not_run',next:'Run actual browser/engine QA; static checks do not prove gameplay'}
@@ -64,6 +66,7 @@ export async function buildHtmlGame({path,roots}){
  const source=await permittedPath(resolve(project.root,'src'),roots),outParent=resolve(project.root,'.totop/builds');await mkdir(outParent,{recursive:true});await unlinkedPath(outParent)
  const output=resolve(outParent,randomUUID());await mkdir(output)
  const sdkHash=createHash('sha256').update(await readFile(new URL('totop-game.global.js',assets))).digest('hex'),hashes={},excluded=[]
+ let total=0,count=0
  async function copy(from,to){
   let installedSdk=false
   try{installedSdk=createHash('sha256').update(await readStable(resolve(from,'totop-game.global.js'),200*1024*1024)).digest('hex')===sdkHash}catch(error){if(error.code!=='ENOENT')throw error}
@@ -73,7 +76,11 @@ export async function buildHtmlGame({path,roots}){
    if(entry.isDirectory()){await mkdir(dest);await copy(input,dest);continue}
    if(installedSdk&&(entry.name==='INTEGRATION.md'||entry.name.endsWith('.d.ts'))){excluded.push(relative(source,input).replaceAll('\\','/'));continue}
    if(!runtimeFileSupported(entry.name))throw Error('unsupported_build_file: '+relative(source,input))
-   const data=await readStable(input,200*1024*1024,undefined,true);await writeFile(dest,data,{flag:'wx'});hashes[relative(output,dest).replaceAll('\\','/')]=createHash('sha256').update(data).digest('hex')
+   const info=await lstat(input);total+=info.size
+   if(total>GAME_ZIP_LIMIT||++count>GAME_FILE_LIMIT)throw Error('build_limit_exceeded')
+   const target=await open(dest,'wx'),hash=createHash('sha256')
+   try{for await(const chunk of stableChunks(input,GAME_ZIP_LIMIT,info,true)){hash.update(chunk);await target.writeFile(chunk)}}finally{await target.close()}
+   hashes[relative(output,dest).replaceAll('\\','/')]=hash.digest('hex')
   }
  }
  try{await copy(source,output)}catch(error){await rm(output,{recursive:true,force:true});throw error}
@@ -129,8 +136,8 @@ export async function startGamePreview({path,roots,port=0,config={}}){
    const file=await permittedPath(resolve(root,name),[root]),compression=extname(file)
    const original=compression==='.br'||compression==='.gz'?file.slice(0,-compression.length):file
    if(compression==='.br'||compression==='.gz')res.setHeader('Content-Encoding',compression==='.br'?'br':'gzip')
-   res.setHeader('Content-Type',types[extname(original)]??'application/octet-stream');res.end(await readStable(file,200*1024*1024,undefined,true))
-  }catch{res.statusCode=404;res.end('Not found')}
+   res.setHeader('Content-Type',types[extname(original)]??'application/octet-stream');await pipeline(Readable.from(stableChunks(file,GAME_ZIP_LIMIT,undefined,true)),res)
+  }catch{if(res.headersSent)res.destroy();else{res.statusCode=404;res.end('Not found')}}
  })
  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'127.0.0.1',resolve)})
  return{server,url:`http://127.0.0.1:${server.address().port}/`,diagnostics:()=>structuredClone(diagnostics),close:()=>new Promise(resolve=>server.close(resolve))}

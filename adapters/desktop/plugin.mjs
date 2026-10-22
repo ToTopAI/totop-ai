@@ -1,5 +1,6 @@
 import { pathToFileURL } from 'node:url'
 import { isAbsolute } from 'node:path'
+import { registerGameView } from './game-view-server.mjs'
 export const name = 'totop-ai'
 export const inject = ['tools']
 export async function apply(ctx, config = {}) {
@@ -7,4 +8,5 @@ export async function apply(ctx, config = {}) {
   const client = await import(pathToFileURL(config.mcpClientEntry).href)
   const { mcpClientEntry, ...options } = config
   await client.apply(ctx, options)
+  ctx.inject(['webServer', 'connection', 'sessionQuery'], viewCtx => registerGameView(viewCtx, options))
 }
