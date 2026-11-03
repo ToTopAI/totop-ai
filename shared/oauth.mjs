@@ -6,7 +6,16 @@ import { callbackPage, callbackLocale } from './oauth-page.mjs'
 
 export const ENDPOINT='https://api.totop.ai/mcp',ISSUER='https://auth.totop.ai'
 export const SCOPES='totop:developer:read totop:draft:write totop:upload:write totop:submission:write'
-const safeFetch=async(input,init={})=>{const url=new URL(input instanceof Request?input.url:String(input));if(![ENDPOINT,ISSUER].some(origin=>url.origin===new URL(origin).origin))throw Error('untrusted_oauth_endpoint');return fetch(input,{...init,redirect:'error',signal:init.signal?AbortSignal.any([init.signal,AbortSignal.timeout(15000)]):AbortSignal.timeout(15000)})}
+export const MCP_REQUEST_TIMEOUT_MS=120000
+const safeFetch=async(input,init={})=>{
+  const url=new URL(input instanceof Request?input.url:String(input))
+  if(![ENDPOINT,ISSUER].some(origin=>url.origin===new URL(origin).origin))throw Error('untrusted_oauth_endpoint')
+  // Upload confirmation downloads and validates the package before responding.
+  // Keep MCP's HTTP budget aligned with callTool; OAuth requests stay bounded at 15s.
+  const timeout=AbortSignal.timeout(url.origin===new URL(ENDPOINT).origin&&url.pathname==='/mcp'?MCP_REQUEST_TIMEOUT_MS:15000)
+  const signal=init.signal??(input instanceof Request?input.signal:undefined)
+  return fetch(input,{...init,redirect:'error',signal:signal?AbortSignal.any([signal,timeout]):timeout})
+}
 export class BridgeAuth {
   constructor(store){this.store=store;this.stateValue=randomBytes(32).toString('hex');this.memory=null;this.verifier=null;this.redirect='http://127.0.0.1/totop/callback'}
   get redirectUrl(){return this.redirect}

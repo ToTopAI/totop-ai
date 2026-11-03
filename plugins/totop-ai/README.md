@@ -1,4 +1,4 @@
-# totop-ai 0.5.2
+# totop-ai 0.5.4
 
 Develop HTML5 and WebGL games with the ToTop SDK, preview locally, and submit releases to ToTop using MCP.
 

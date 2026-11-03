@@ -2,7 +2,7 @@
   "name": "totop-ai-distribution",
   "private": true,
   "type": "module",
-  "version": "0.5.2",
+  "version": "0.5.4",
   "engines": {
     "node": ">=22"
   },

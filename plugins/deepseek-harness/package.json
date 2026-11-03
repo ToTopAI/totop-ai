@@ -1,6 +1,6 @@
 {
   "name": "totop-ai",
-  "version": "0.5.2",
+  "version": "0.5.4",
   "type": "module",
   "main": "./index.mjs",
   "exports": {
