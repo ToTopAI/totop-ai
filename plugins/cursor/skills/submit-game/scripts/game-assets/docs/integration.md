@@ -82,3 +82,42 @@ An absent editor, browser, account or device produces `not_run`/`blocked`, not `
 已有项目的 SDK 安装结果包含 runtimeFiles 与 developmentFiles。类型声明（*.d.ts）和 INTEGRATION.md 保留在源项目，运行导出只复制 SDK 的 JavaScript，以及游戏实际使用的静态资源和根清单。继续使用项目原有工具链，并调整 SDK 子目录的复制规则；不要把接入文档或源码当作运行资产。已有署名、授权说明等运行材料继续保留为平台支持的文本资产。
 
 build_html_game 会识别当前固定版本 SDK，排除其声明和接入文档，并返回 excludedDevelopmentFiles；它不会静默删除其他开发文件。check_game_build 的 runtime_files 检查应通过，再执行 prepare_local_artifact 的冻结打包检查。静态导出和打包均不能替代浏览器试玩。
+
+## Fixed-window canvas fitting
+
+ToTop keeps the outer player window fixed and fits the complete game document
+inside it. Declare the design canvas in the root `totop.game.json`:
+
+```json
+"display": { "mode": "fixed", "width": 1440, "height": 900 }
+```
+
+The canvas must include the HUD, text and every action button. Both dimensions
+are integer CSS pixels, from 320 to 4096. The player scales the entire iframe by
+`min(windowWidth / width, windowHeight / height)` and centers it, allowing
+letterboxing. Resizing or switching fullscreen keeps the same iframe and game
+state. Do not hide overflowing content to satisfy this contract: ensure the
+complete playable canvas actually fits at the declared dimensions, including
+longer scenes, loaded images, menus and dialogs.
+
+A game that deliberately responds to the real window size can opt in:
+
+```json
+"display": { "mode": "responsive" }
+```
+
+This mode receives the real iframe viewport and the existing SDK viewport events.
+It remains the game's responsibility to keep required controls accessible.
+Without an explicit declaration, the player uses a 1440×900 landscape or
+900×1440 portrait reference canvas. Existing verified legacy presentation settings
+remain a fallback until their packages declare a canvas. An explicit version
+manifest always takes precedence. Display metadata is read from the immutable
+published runtime, not from an arbitrary URL or another release. Package bytes,
+SHA-256, sandbox policy and account/save permissions do not change.
+
+Acceptance: test windowed, fullscreen, return from fullscreen, phone portrait and
+landscape; verify that every action is visible and hits its intended target and
+that resizing does not reload the frame. Very long document-style games should
+provide their own scrollable reading area with persistent actions, or declare a
+suitable complete canvas; a fixed outer window alone cannot discover their
+intended document dimensions.
